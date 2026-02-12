@@ -5,7 +5,11 @@ import org.scaas.auth.AuthService;
 import org.scaas.domain.entites.User;
 import org.scaas.domain.enumerations.Role;
 import org.scaas.domain.repositories.UserRepository;
+import org.scaas.protocol.requests.LoginRequest;
 import org.scaas.protocol.requests.RegisterRequest;
+import org.scaas.security.JwtService;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +19,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     @Override
     public void register(RegisterRequest request) {
@@ -37,5 +42,18 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(newUser);
 
+    }
+
+    @Override
+    public String login(LoginRequest request) {
+
+        User user = userRepository.findByEmail(request.getEmail()).
+                orElseThrow(() -> new RuntimeException("Email not found"));
+
+        if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
+            throw new BadCredentialsException("Wrong Email or password");
+        }
+
+        return jwtService.generateToken(user.getEmail());
     }
 }
