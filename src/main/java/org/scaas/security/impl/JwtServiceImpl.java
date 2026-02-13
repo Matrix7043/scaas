@@ -7,6 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.scaas.security.JwtService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
@@ -42,5 +43,11 @@ public class JwtServiceImpl implements JwtService {
                 .parseClaimsJws(token).getBody();
 
         return claims.getSubject();
+    }
+
+    @Override
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        String email = extractEmail(token);
+        return email.equals(userDetails.getUsername());
     }
 }
