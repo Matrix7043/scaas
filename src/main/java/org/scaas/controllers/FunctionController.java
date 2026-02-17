@@ -9,11 +9,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/function")
+@RequestMapping("/functions")
 @RequiredArgsConstructor
 public class FunctionController {
 
-    FunctionService functionService;
+    private final FunctionService functionService;
 
     @PostMapping()
     public FunctionResponse create(@RequestBody CreateFunctionRequest request) {
