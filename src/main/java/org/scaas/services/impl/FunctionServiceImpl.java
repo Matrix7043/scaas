@@ -1,5 +1,6 @@
 package org.scaas.services.impl;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.scaas.domain.entites.Function;
 import org.scaas.domain.entites.User;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -51,4 +53,17 @@ public class FunctionServiceImpl implements FunctionService {
                 .toList();
 
     }
+
+    @Override
+    public FunctionResponse getFunctionById(UUID id) {
+        
+        User owner = currentUserService.getCurrentUser();
+        Function function = functionRepository.findByIdAndOwner(id, owner)
+                .orElseThrow(() -> new RuntimeException("Function not found"));
+
+        return toFunctionResponse.toFunctionResponse(function);
+
+    }
+
+
 }

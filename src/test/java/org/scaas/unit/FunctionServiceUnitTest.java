@@ -68,7 +68,7 @@ public class FunctionServiceUnitTest {
         );
 
         assertNotNull(result);
-        assertEquals("Test1", result.getName());
+        assertEquals("Test1", result.name());
 
         verify(currentUserService).getCurrentUser();
         verify(functionRepository).save(any(Function.class));
@@ -99,7 +99,7 @@ public class FunctionServiceUnitTest {
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals("Test1", result.getFirst().getName());
+        assertEquals("Test1", result.getFirst().name());
 
         verify(functionRepository).findByOwner(mockUser);
 
