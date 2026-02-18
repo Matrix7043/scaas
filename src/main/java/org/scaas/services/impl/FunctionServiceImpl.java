@@ -7,6 +7,7 @@ import org.scaas.domain.repositories.FunctionRepository;
 import org.scaas.exceptions.ResourceNotFoundException;
 import org.scaas.protocol.mappers.ToFunctionResponse;
 import org.scaas.protocol.requests.CreateFunctionRequest;
+import org.scaas.protocol.requests.UpdateFunctionRequest;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.security.CurrentUserService;
 import org.scaas.services.FunctionService;
@@ -53,7 +54,44 @@ public class FunctionServiceImpl implements FunctionService {
                 .toList();
 
     }
+    @Override
+    public FunctionResponse updateFunctionById(UUID id, UpdateFunctionRequest request) {
 
+        User owner = currentUserService.getCurrentUser();
+        Function function = functionRepository.findByIdAndOwner(id, owner).orElseThrow(
+                () -> new ResourceNotFoundException("Function not found")
+        );
+
+        if(request.name() != null && !request.name().isEmpty()) {
+            function.setName(request.name());
+        }
+        if(request.runtime() != null){
+            function.setRuntime(request.runtime());
+        }
+        if(request.entryPoint() != null && !request.entryPoint().isEmpty()) {
+            function.setEntrypoint(request.entryPoint());
+        }
+
+        function.setUpdatedAt(LocalDateTime.now());
+
+        Function updated = functionRepository.save(function);
+
+        return mapper.toFunctionResponse(updated);
+    }
+
+    @Override
+    public FunctionResponse deleteFunctionById(UUID id) {
+
+        User owner = currentUserService.getCurrentUser();
+
+        Function function = functionRepository.findByIdAndOwner(id, owner).orElseThrow(
+                () -> new ResourceNotFoundException("Function not found")
+        );
+
+        functionRepository.delete(function);
+
+        return mapper.toFunctionResponse(function);
+    }
 
     @Override
     public FunctionResponse getFunctionById(UUID id) {
