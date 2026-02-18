@@ -66,7 +66,7 @@ public class AuthAndFunctionITest {
         String functionJson = """
                 {
                     "name": "hello",
-                    "runtime": "java17",
+                    "runtime": "PYTHON",
                     "entryPoint": "handler"
                 }
                 """;
@@ -154,7 +154,7 @@ public class AuthAndFunctionITest {
         String functionJson = """
                 {
                     "name": "hello",
-                    "runtime": "java17",
+                    "runtime": "PYTHON",
                     "entryPoint": "handler"
                 }
                 """;
@@ -162,7 +162,7 @@ public class AuthAndFunctionITest {
         String functionJson2 = """
                 {
                     "name": "hello2",
-                    "runtime": "java17",
+                    "runtime": "PYTHON",
                     "entryPoint": "handler"
                 }
                 """;

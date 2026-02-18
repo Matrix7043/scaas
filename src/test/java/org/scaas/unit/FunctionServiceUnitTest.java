@@ -8,8 +8,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.scaas.domain.entites.Function;
 import org.scaas.domain.entites.User;
+import org.scaas.domain.enumerations.Runtime;
 import org.scaas.domain.repositories.FunctionRepository;
 import org.scaas.protocol.mappers.ToFunctionResponse;
+import org.scaas.protocol.requests.CreateFunctionRequest;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.security.CurrentUserService;
 import org.scaas.services.impl.FunctionServiceImpl;
@@ -63,9 +65,13 @@ public class FunctionServiceUnitTest {
 
         when(mapper.toFunctionResponse(any(Function.class))).thenReturn(fakeResponse);
 
-        FunctionResponse result = functionService.createFunction(
-                "Test1", "java17", "handler"
-        );
+        CreateFunctionRequest request = CreateFunctionRequest.builder()
+                .name("Test1")
+                .runtime(Runtime.PYTHON)
+                .entryPoint("main")
+                .build();
+
+        FunctionResponse result = functionService.createFunction(request);
 
         assertNotNull(result);
         assertEquals("Test1", result.name());

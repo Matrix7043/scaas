@@ -1,6 +1,7 @@
 package org.scaas.protocol.responses;
 
 import lombok.Builder;
+import org.scaas.domain.enumerations.Runtime;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -9,7 +10,7 @@ import java.util.UUID;
 public record FunctionResponse(UUID id,
                                String name,
                                String entrypoint,
-                               String runtime,
+                               Runtime runtime,
                                LocalDateTime createdAt,
                                LocalDateTime updatedAt) {
 

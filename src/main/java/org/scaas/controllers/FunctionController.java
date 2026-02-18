@@ -18,11 +18,7 @@ public class FunctionController {
 
     @PostMapping()
     public FunctionResponse create(@RequestBody CreateFunctionRequest request) {
-        return functionService.createFunction(
-                request.name(),
-                request.runtime(),
-                request.entryPoint()
-        );
+        return functionService.createFunction(request);
     }
 
     @GetMapping()

@@ -2,6 +2,7 @@ package org.scaas.domain.entites;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.scaas.domain.enumerations.Runtime;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -27,7 +28,8 @@ public class Function {
     private User owner;
 
     @Column(nullable = false)
-    private String runtime;
+    @Enumerated(EnumType.STRING)
+    private Runtime runtime;
     @Column(nullable = false)
     private String entrypoint;
 

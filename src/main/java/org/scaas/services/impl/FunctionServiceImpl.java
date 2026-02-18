@@ -6,6 +6,7 @@ import org.scaas.domain.entites.User;
 import org.scaas.domain.repositories.FunctionRepository;
 import org.scaas.exceptions.ResourceNotFoundException;
 import org.scaas.protocol.mappers.ToFunctionResponse;
+import org.scaas.protocol.requests.CreateFunctionRequest;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.security.CurrentUserService;
 import org.scaas.services.FunctionService;
@@ -21,27 +22,26 @@ public class FunctionServiceImpl implements FunctionService {
 
     private final CurrentUserService currentUserService;
     private final FunctionRepository functionRepository;
-    private final ToFunctionResponse toFunctionResponse;
+    private final ToFunctionResponse mapper;
 
     @Override
-    public FunctionResponse createFunction(String name, String runtime, String entrypoint) {
+    public FunctionResponse createFunction(CreateFunctionRequest request) {
 
         User owner = currentUserService.getCurrentUser();
         Function function = Function.builder()
                 .owner(owner)
-                .name(name)
-                .runtime(runtime)
-                .entrypoint(entrypoint)
+                .name(request.name())
+                .runtime(request.runtime())
+                .entrypoint(request.entryPoint())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
 
         functionRepository.save(function);
 
-        return toFunctionResponse.toFunctionResponse(function);
+        return mapper.toFunctionResponse(function);
 
     }
-
 
     @Override
     public List<FunctionResponse> getFunctions() {
@@ -49,10 +49,11 @@ public class FunctionServiceImpl implements FunctionService {
         User owner = currentUserService.getCurrentUser();
         return functionRepository.findByOwner(owner)
                 .stream()
-                .map(toFunctionResponse::toFunctionResponse)
+                .map(mapper::toFunctionResponse)
                 .toList();
 
     }
+
 
     @Override
     public FunctionResponse getFunctionById(UUID id) {
@@ -61,7 +62,7 @@ public class FunctionServiceImpl implements FunctionService {
         Function function = functionRepository.findByIdAndOwner(id, owner)
                 .orElseThrow(() -> new ResourceNotFoundException("Function not found"));
 
-        return toFunctionResponse.toFunctionResponse(function);
+        return mapper.toFunctionResponse(function);
 
     }
 

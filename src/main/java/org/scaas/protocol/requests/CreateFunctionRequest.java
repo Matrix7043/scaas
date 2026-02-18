@@ -1,5 +1,9 @@
 package org.scaas.protocol.requests;
 
-public record CreateFunctionRequest(String name, String runtime, String entryPoint) {
+import lombok.Builder;
+import org.scaas.domain.enumerations.Runtime;
+
+@Builder
+public record CreateFunctionRequest(String name, Runtime runtime, String entryPoint) {
 
 }
