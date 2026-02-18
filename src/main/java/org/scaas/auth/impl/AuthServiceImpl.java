@@ -9,7 +9,6 @@ import org.scaas.protocol.requests.LoginRequest;
 import org.scaas.protocol.requests.RegisterRequest;
 import org.scaas.security.JwtService;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,19 +23,19 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void register(RegisterRequest request) {
 
-        if(userRepository.findByEmail(request.getEmail()).isPresent()){
+        if(userRepository.findByEmail(request.email()).isPresent()){
             throw new IllegalArgumentException("Email already exists");
         }
-        if(userRepository.findByUsername(request.getUsername()).isPresent()){
+        if(userRepository.findByUsername(request.username()).isPresent()){
             throw new IllegalArgumentException("Username already exists");
         }
 
         User newUser = User.builder()
-                .username(request.getUsername())
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
+                .username(request.username())
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .email(request.email())
+                .password(passwordEncoder.encode(request.password()))
                 .role(Role.USER)
                 .build();
 
@@ -47,10 +46,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public String login(LoginRequest request) {
 
-        User user = userRepository.findByEmail(request.getEmail()).
+        User user = userRepository.findByEmail(request.email()).
                 orElseThrow(() -> new RuntimeException("Email not found"));
 
-        if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
+        if(!passwordEncoder.matches(request.password(), user.getPassword())){
             throw new BadCredentialsException("Wrong Email or password");
         }
 
