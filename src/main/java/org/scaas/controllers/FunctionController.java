@@ -27,12 +27,12 @@ public class FunctionController {
         return functionService.getFunctions();
     }
 
-    @PutMapping()
+    @PutMapping("/{id}")
     public FunctionResponse updateById(@PathVariable UUID id, @RequestBody UpdateFunctionRequest request) {
         return functionService.updateFunctionById(id, request);
     }
 
-    @DeleteMapping()
+    @DeleteMapping("/{id}")
     public FunctionResponse deleteById(@PathVariable UUID id) {
         return functionService.deleteFunctionById(id);
     }

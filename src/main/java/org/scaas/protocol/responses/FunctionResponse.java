@@ -9,7 +9,7 @@ import java.util.UUID;
 @Builder
 public record FunctionResponse(UUID id,
                                String name,
-                               String entrypoint,
+                               String entryPoint,
                                Runtime runtime,
                                LocalDateTime createdAt,
                                LocalDateTime updatedAt) {

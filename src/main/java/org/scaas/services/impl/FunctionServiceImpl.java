@@ -33,7 +33,7 @@ public class FunctionServiceImpl implements FunctionService {
                 .owner(owner)
                 .name(request.name())
                 .runtime(request.runtime())
-                .entrypoint(request.entryPoint())
+                .entryPoint(request.entryPoint())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -69,7 +69,7 @@ public class FunctionServiceImpl implements FunctionService {
             function.setRuntime(request.runtime());
         }
         if(request.entryPoint() != null && !request.entryPoint().isEmpty()) {
-            function.setEntrypoint(request.entryPoint());
+            function.setEntryPoint(request.entryPoint());
         }
 
         function.setUpdatedAt(LocalDateTime.now());

@@ -31,7 +31,7 @@ public class Function {
     @Enumerated(EnumType.STRING)
     private Runtime runtime;
     @Column(nullable = false)
-    private String entrypoint;
+    private String entryPoint;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
