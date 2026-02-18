@@ -3,7 +3,6 @@ package org.scaas.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.MediaType;
 import org.junit.jupiter.api.Test;
 import org.scaas.protocol.responses.FunctionResponse;
@@ -15,7 +14,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -203,11 +201,9 @@ public class AuthAndFunctionITest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("hello"));
 
-        // TODO: Add Global Exception Handler and change this mock
-        // TODO: Unit Test for the new org.scaas.service.FunctionService.getById method
-        assertThrows(ServletException.class, () -> mockMvc.perform(get("/functions/"+Fid2.toString())
+        mockMvc.perform(get("/functions/"+Fid2.toString())
                 .header("Authorization", "Bearer " + token))
-                .andExpect(status().is5xxServerError()));
+                .andExpect(status().isNotFound());
     }
 
     @Test

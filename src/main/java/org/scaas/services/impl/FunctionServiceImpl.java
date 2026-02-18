@@ -1,10 +1,10 @@
 package org.scaas.services.impl;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.scaas.domain.entites.Function;
 import org.scaas.domain.entites.User;
 import org.scaas.domain.repositories.FunctionRepository;
+import org.scaas.exceptions.ResourceNotFoundException;
 import org.scaas.protocol.mappers.ToFunctionResponse;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.security.CurrentUserService;
@@ -59,7 +59,7 @@ public class FunctionServiceImpl implements FunctionService {
         
         User owner = currentUserService.getCurrentUser();
         Function function = functionRepository.findByIdAndOwner(id, owner)
-                .orElseThrow(() -> new RuntimeException("Function not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Function not found"));
 
         return toFunctionResponse.toFunctionResponse(function);
 
