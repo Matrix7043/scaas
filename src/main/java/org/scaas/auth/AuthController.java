@@ -1,12 +1,10 @@
 package org.scaas.auth;
 
 import lombok.RequiredArgsConstructor;
+import org.scaas.protocol.requests.LoginRequest;
 import org.scaas.protocol.requests.RegisterRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -21,5 +19,13 @@ public class AuthController {
         authService.register(registerRequest);
 
         return ResponseEntity.ok("User registered successfully");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
+
+        String token = authService.login(loginRequest);
+
+        return ResponseEntity.ok(token);
     }
 }
