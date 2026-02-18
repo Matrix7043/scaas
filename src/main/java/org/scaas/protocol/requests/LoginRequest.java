@@ -1,13 +1,7 @@
 package org.scaas.protocol.requests;
 
-import lombok.*;
+import lombok.Builder;
 
-@AllArgsConstructor
-@NoArgsConstructor
-@Getter
-@Setter
 @Builder
-public class LoginRequest {
-    private String email;
-    private String password;
+public record LoginRequest(String email, String password) {
 }

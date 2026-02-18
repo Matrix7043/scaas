@@ -4,6 +4,9 @@ import lombok.Builder;
 import org.scaas.domain.enumerations.Runtime;
 
 @Builder
-public record CreateFunctionRequest(String name, Runtime runtime, String entryPoint) {
-
+public record UpdateFunctionRequest(
+        String name,
+        Runtime runtime,
+        String entryPoint
+) {
 }

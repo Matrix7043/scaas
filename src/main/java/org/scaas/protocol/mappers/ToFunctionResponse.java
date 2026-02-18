@@ -12,7 +12,7 @@ public class ToFunctionResponse {
                 .id(function.getId())
                 .name(function.getName())
                 .runtime(function.getRuntime())
-                .entrypoint(function.getEntrypoint())
+                .entryPoint(function.getEntryPoint())
                 .createdAt(function.getCreatedAt())
                 .updatedAt(function.getUpdatedAt())
                 .build();

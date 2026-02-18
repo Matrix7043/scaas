@@ -11,198 +11,160 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class AuthAndFunctionITest {
+@Transactional
+class AuthAndFunctionITest {
 
     @Autowired
     private MockMvc mockMvc;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-
-    @Test
-    void fullFlow_register_login_createAndListFunction() throws Exception {
-
-        String registerJson = """
-                {
-                    "username": "testUser",
-                    "firstName": "Test",
-                    "lastName": "User",
-                    "email": "test@test.com",
-                    "password": "password123"
-                }
-                """;
-
-        mockMvc.perform(post("/auth/register")
-                .contentType(String.valueOf(MediaType.APPLICATION_JSON))
-                .content(registerJson))
-                .andExpect(status().isOk());
-
-        String loginJson = """
-                {
-                    "email": "test@test.com",
-                    "password": "password123"
-                }
-                """;
-
-        String token = mockMvc.perform(post("/auth/login")
-                .contentType(String.valueOf(MediaType.APPLICATION_JSON))
-                .content(loginJson))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        String functionJson = """
-                {
-                    "name": "hello",
-                    "runtime": "java17",
-                    "entryPoint": "handler"
-                }
-                """;
-
-        mockMvc.perform(post("/functions")
-                .header("Authorization", "Bearer " + token)
-                .contentType(String.valueOf(MediaType.APPLICATION_JSON))
-                .content(functionJson))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("hello"));
-
-        mockMvc.perform(get("/functions")
-                .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
-
+    AuthAndFunctionITest() {
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
     }
 
-    @Test
-    void getById_returnsFunctionThatBelongsToUserOrForbids() throws Exception {
-
-        objectMapper.registerModule(new JavaTimeModule());
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        String registerJson = """
-                {
-                    "username": "testUserA",
-                    "firstName": "Test",
-                    "lastName": "User",
-                    "email": "testA@test.com",
-                    "password": "password123"
-                }
-                """;
-
-        String registerJson2 = """
-                {
-                    "username": "testUserB",
-                    "firstName": "Test",
-                    "lastName": "User",
-                    "email": "testB@test.com",
-                    "password": "password123"
-                }
-                """;
+    private String registerAndLogin(String email) throws Exception {
 
         mockMvc.perform(post("/auth/register")
                         .contentType(String.valueOf(MediaType.APPLICATION_JSON))
-                        .content(registerJson))
+                        .content("""
+                        {
+                            "username": "%s",
+                            "firstName": "Test",
+                            "lastName": "User",
+                            "email": "%s",
+                            "password": "password123"
+                        }
+                        """.formatted(email, email)))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/auth/register")
+        return mockMvc.perform(post("/auth/login")
                         .contentType(String.valueOf(MediaType.APPLICATION_JSON))
-                        .content(registerJson2))
-                .andExpect(status().isOk());
-
-        String loginJson = """
-                {
-                    "email": "testA@test.com",
-                    "password": "password123"
-                }
-                """;
-
-        String loginJson2 = """
-                {
-                    "email": "testB@test.com",
-                    "password": "password123"
-                }
-                """;
-
-        String token = mockMvc.perform(post("/auth/login")
-                        .contentType(String.valueOf(MediaType.APPLICATION_JSON))
-                        .content(loginJson))
+                        .content("""
+                        {
+                            "email": "%s",
+                            "password": "password123"
+                        }
+                        """.formatted(email)))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
+    }
 
-        String token2 = mockMvc.perform(post("/auth/login")
-                        .contentType(String.valueOf(MediaType.APPLICATION_JSON))
-                        .content(loginJson2))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        String functionJson = """
-                {
-                    "name": "hello",
-                    "runtime": "java17",
-                    "entryPoint": "handler"
-                }
-                """;
-
-        String functionJson2 = """
-                {
-                    "name": "hello2",
-                    "runtime": "java17",
-                    "entryPoint": "handler"
-                }
-                """;
-
+    private UUID createFunction(String token, String name) throws Exception {
 
         String response = mockMvc.perform(post("/functions")
                         .header("Authorization", "Bearer " + token)
                         .contentType(String.valueOf(MediaType.APPLICATION_JSON))
-                        .content(functionJson))
+                        .content("""
+                        {
+                            "name": "%s",
+                            "runtime": "PYTHON",
+                            "entryPoint": "handler"
+                        }
+                        """.formatted(name)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("hello"))
-                        .andReturn()
-                                .getResponse()
-                                        .getContentAsString();
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
+        FunctionResponse function =
+                objectMapper.readValue(response, FunctionResponse.class);
 
-        String response2 = mockMvc.perform(post("/functions")
-                        .header("Authorization", "Bearer " + token2)
+        return function.id();
+    }
+
+    @Test
+    void fullFlow_register_login_createAndListFunction() throws Exception {
+
+        String token = registerAndLogin("user@test.com");
+
+        createFunction(token, "hello");
+
+        mockMvc.perform(get("/functions")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void getById_returnsFunctionIfOwner_elseNotFound() throws Exception {
+
+        String tokenA = registerAndLogin("a@test.com");
+        String tokenB = registerAndLogin("b@test.com");
+
+        UUID idA = createFunction(tokenA, "helloA");
+        UUID idB = createFunction(tokenB, "helloB");
+
+        mockMvc.perform(get("/functions/" + idA)
+                        .header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("helloA"));
+
+        mockMvc.perform(get("/functions/" + idB)
+                        .header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateById_updatesIfOwner_elseNotFound() throws Exception {
+
+        String tokenA = registerAndLogin("owner@test.com");
+        String tokenB = registerAndLogin("other@test.com");
+
+        UUID id = createFunction(tokenA, "original");
+
+        String updateJson = """
+                {
+                    "name": "updated",
+                    "entryPoint": "handler"
+                }
+                """;
+
+        mockMvc.perform(put("/functions/" + id)
+                        .header("Authorization", "Bearer " + tokenA)
                         .contentType(String.valueOf(MediaType.APPLICATION_JSON))
-                        .content(functionJson2))
+                        .content(updateJson))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("hello2"))
-                        .andReturn()
-                                .getResponse()
-                                        .getContentAsString();
+                .andExpect(jsonPath("$.name").value("updated"))
+                .andExpect(jsonPath("$.runtime").value("PYTHON"));
 
+        mockMvc.perform(put("/functions/" + id)
+                        .header("Authorization", "Bearer " + tokenB)
+                        .contentType(String.valueOf(MediaType.APPLICATION_JSON))
+                        .content(updateJson))
+                .andExpect(status().isNotFound());
+    }
 
-        FunctionResponse functionResponse = objectMapper.readValue(response, FunctionResponse.class);
-        FunctionResponse functionResponse2 = objectMapper.readValue(response2, FunctionResponse.class);
+    @Test
+    void deleteById_deletesIfOwner_elseNotFound() throws Exception {
 
-        UUID Fid = functionResponse.id();
-        UUID Fid2 = functionResponse2.id();
+        String tokenA = registerAndLogin("owner@test.com");
+        String tokenB = registerAndLogin("other@test.com");
 
-        mockMvc.perform(get("/functions/"+Fid.toString())
-                .header("Authorization", "Bearer " + token))
+        UUID id = createFunction(tokenA, "original");
+
+        mockMvc.perform(delete("/functions/" + id)
+                        .header("Authorization", "Bearer " + tokenA))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("hello"));
+                .andExpect(jsonPath("$.name").value("original"))
+                .andExpect(jsonPath("$.runtime").value("PYTHON"));
 
-        mockMvc.perform(get("/functions/"+Fid2.toString())
-                .header("Authorization", "Bearer " + token))
+        mockMvc.perform(delete("/functions/" + id)
+                        .header("Authorization", "Bearer " + tokenB))
                 .andExpect(status().isNotFound());
     }
 
@@ -210,9 +172,8 @@ public class AuthAndFunctionITest {
     void functions_withoutAuthIsForbidden() throws Exception {
 
         mockMvc.perform(post("/functions")
-                .contentType(String.valueOf(MediaType.APPLICATION_JSON))
-                .content("{}"))
+                        .contentType(String.valueOf(MediaType.APPLICATION_JSON))
+                        .content("{}"))
                 .andExpect(status().isForbidden());
-
     }
 }
