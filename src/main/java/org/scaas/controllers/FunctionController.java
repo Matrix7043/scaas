@@ -1,5 +1,6 @@
 package org.scaas.controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.scaas.protocol.requests.CreateFunctionRequest;
 import org.scaas.protocol.requests.UpdateFunctionRequest;
@@ -18,7 +19,7 @@ public class FunctionController {
     private final FunctionService functionService;
 
     @PostMapping()
-    public FunctionResponse create(@RequestBody CreateFunctionRequest request) {
+    public FunctionResponse create(@Valid @RequestBody CreateFunctionRequest request) {
         return functionService.createFunction(request);
     }
 
@@ -28,7 +29,7 @@ public class FunctionController {
     }
 
     @PutMapping("/{id}")
-    public FunctionResponse updateById(@PathVariable UUID id, @RequestBody UpdateFunctionRequest request) {
+    public FunctionResponse updateById(@PathVariable UUID id,@Valid @RequestBody UpdateFunctionRequest request) {
         return functionService.updateFunctionById(id, request);
     }
 
