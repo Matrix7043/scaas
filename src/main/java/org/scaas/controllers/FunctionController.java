@@ -6,9 +6,10 @@ import org.scaas.protocol.requests.CreateFunctionRequest;
 import org.scaas.protocol.requests.UpdateFunctionRequest;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.services.FunctionService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -24,8 +25,8 @@ public class FunctionController {
     }
 
     @GetMapping()
-    public List<FunctionResponse> list() {
-        return functionService.getFunctions();
+    public Page<FunctionResponse> list(Pageable pageable) {
+        return functionService.getFunctions(pageable);
     }
 
     @PatchMapping("/{id}")

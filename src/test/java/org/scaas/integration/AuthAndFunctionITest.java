@@ -95,11 +95,15 @@ class AuthAndFunctionITest {
         String token = registerAndLogin("user@test.com");
 
         createFunction(token, "hello");
+        createFunction(token, "world");
+        createFunction(token, "!!!");
 
-        mockMvc.perform(get("/functions")
+        mockMvc.perform(get("/functions?page=0&size=2")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.totalElements").value(3));
     }
 
     @ParameterizedTest
