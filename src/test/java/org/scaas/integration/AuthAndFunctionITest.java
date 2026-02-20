@@ -136,7 +136,7 @@ class AuthAndFunctionITest {
     void updateFunction_validatesTheFieldAndGivesMessageIfValid(String requestJson) throws Exception {
         String token = registerAndLogin("updateF@test.com");
         UUID id = createFunction(token, "updateF");
-        mockMvc.perform(put("/functions/" + id)
+        mockMvc.perform(patch("/functions/" + id)
                         .header("Authorization", "Bearer " + token)
                         .contentType(String.valueOf(MediaType.APPLICATION_JSON))
                         .content(requestJson))
@@ -177,7 +177,7 @@ class AuthAndFunctionITest {
                 }
                 """;
 
-        mockMvc.perform(put("/functions/" + id)
+        mockMvc.perform(patch("/functions/" + id)
                         .header("Authorization", "Bearer " + tokenA)
                         .contentType(String.valueOf(MediaType.APPLICATION_JSON))
                         .content(updateJson))
@@ -185,7 +185,7 @@ class AuthAndFunctionITest {
                 .andExpect(jsonPath("$.name").value("updated"))
                 .andExpect(jsonPath("$.runtime").value("PYTHON"));
 
-        mockMvc.perform(put("/functions/" + id)
+        mockMvc.perform(patch("/functions/" + id)
                         .header("Authorization", "Bearer " + tokenB)
                         .contentType(String.valueOf(MediaType.APPLICATION_JSON))
                         .content(updateJson))

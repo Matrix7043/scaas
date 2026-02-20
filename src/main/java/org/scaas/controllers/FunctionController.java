@@ -28,7 +28,7 @@ public class FunctionController {
         return functionService.getFunctions();
     }
 
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     public FunctionResponse updateById(@PathVariable UUID id,@Valid @RequestBody UpdateFunctionRequest request) {
         return functionService.updateFunctionById(id, request);
     }
