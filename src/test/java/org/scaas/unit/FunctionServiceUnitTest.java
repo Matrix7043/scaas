@@ -16,6 +16,10 @@ import org.scaas.protocol.requests.UpdateFunctionRequest;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.security.CurrentUserService;
 import org.scaas.services.impl.FunctionServiceImpl;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -76,7 +80,7 @@ public class FunctionServiceUnitTest {
     }
 
     @Test
-    void listMyFunctions_shouldReturnMappedFunctions(){
+    void listMyFunctions_shouldReturnMappedFunctionsWithPagination(){
 
         when(currentUserService.getCurrentUser()).thenReturn(mockUser);
 
@@ -86,15 +90,25 @@ public class FunctionServiceUnitTest {
                 .owner(mockUser)
                 .build();
 
-        when(functionRepository.findByOwner(mockUser)).thenReturn(List.of(function));
+        Function function2 = Function.builder()
+                .id(UUID.randomUUID())
+                .name("Test2")
+                .owner(mockUser)
+                .build();
 
-        List<FunctionResponse> result = functionService.getFunctions();
+        Pageable pageable = PageRequest.of(0, 2);
+        Page<Function> page = new PageImpl<>(List.of(function, function2), pageable, 5);
+
+        when(functionRepository.findByOwner(mockUser, pageable)).thenReturn(page);
+
+        Page<FunctionResponse> result = functionService.getFunctions(pageable);
 
         assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("Test1", result.getFirst().name());
+        assertEquals(2, result.getContent().size());
+        assertEquals(5, result.getTotalElements());
+        assertEquals("Test1", result.getContent().getFirst().name());
 
-        verify(functionRepository).findByOwner(mockUser);
+        verify(functionRepository).findByOwner(mockUser, pageable);
 
     }
 

@@ -11,10 +11,11 @@ import org.scaas.protocol.requests.UpdateFunctionRequest;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.security.CurrentUserService;
 import org.scaas.services.FunctionService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -45,13 +46,11 @@ public class FunctionServiceImpl implements FunctionService {
     }
 
     @Override
-    public List<FunctionResponse> getFunctions() {
+    public Page<FunctionResponse> getFunctions(Pageable pageable) {
 
         User owner = currentUserService.getCurrentUser();
-        return functionRepository.findByOwner(owner)
-                .stream()
-                .map(mapper::toFunctionResponse)
-                .toList();
+        return functionRepository.findByOwner(owner,pageable)
+                .map(mapper::toFunctionResponse);
 
     }
     @Override

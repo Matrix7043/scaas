@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.MediaType;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -93,11 +95,56 @@ class AuthAndFunctionITest {
         String token = registerAndLogin("user@test.com");
 
         createFunction(token, "hello");
+        createFunction(token, "world");
+        createFunction(token, "!!!");
 
-        mockMvc.perform(get("/functions")
+        mockMvc.perform(get("/functions?page=0&size=2")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.totalElements").value(3));
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.scaas.testdata.Validation#invalidRegisterRequests")
+    void register_validatesTheFieldAndGivesMessageIfInvalid(String requestJson) throws Exception {
+        mockMvc.perform(post("/auth/register")
+                        .contentType(String.valueOf(MediaType.APPLICATION_JSON))
+                        .content(requestJson))
+                .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.scaas.testdata.Validation#invalidLoginRequests")
+    void login_validatesTheFieldAndGivesMessageIfValid(String requestJson) throws Exception {
+        mockMvc.perform(post("/auth/login")
+                .contentType(String.valueOf(MediaType.APPLICATION_JSON))
+                .content(requestJson))
+                .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.scaas.testdata.Validation#invalidCreateFunctionRequests")
+    void createFunction_validatesTheFieldAndGivesMessageIfValid(String requestJson) throws Exception {
+        String token = registerAndLogin("validate@test.com");
+        mockMvc.perform(post("/functions")
+                .header("Authorization", "Bearer " + token)
+                .contentType(String.valueOf(MediaType.APPLICATION_JSON))
+                .content(requestJson))
+                .andExpect(status().isBadRequest());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.scaas.testdata.Validation#invalidPatchRequests")
+    void updateFunction_validatesTheFieldAndGivesMessageIfValid(String requestJson) throws Exception {
+        String token = registerAndLogin("updateF@test.com");
+        UUID id = createFunction(token, "updateF");
+        mockMvc.perform(patch("/functions/" + id)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(String.valueOf(MediaType.APPLICATION_JSON))
+                        .content(requestJson))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -134,7 +181,7 @@ class AuthAndFunctionITest {
                 }
                 """;
 
-        mockMvc.perform(put("/functions/" + id)
+        mockMvc.perform(patch("/functions/" + id)
                         .header("Authorization", "Bearer " + tokenA)
                         .contentType(String.valueOf(MediaType.APPLICATION_JSON))
                         .content(updateJson))
@@ -142,7 +189,7 @@ class AuthAndFunctionITest {
                 .andExpect(jsonPath("$.name").value("updated"))
                 .andExpect(jsonPath("$.runtime").value("PYTHON"));
 
-        mockMvc.perform(put("/functions/" + id)
+        mockMvc.perform(patch("/functions/" + id)
                         .header("Authorization", "Bearer " + tokenB)
                         .contentType(String.valueOf(MediaType.APPLICATION_JSON))
                         .content(updateJson))
