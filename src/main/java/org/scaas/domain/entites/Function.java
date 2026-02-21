@@ -37,4 +37,5 @@ public class Function {
     private LocalDateTime createdAt;
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+    private LocalDateTime deletedAt;
 }

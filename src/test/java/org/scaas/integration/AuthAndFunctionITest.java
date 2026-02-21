@@ -203,10 +203,25 @@ class AuthAndFunctionITest {
         String tokenB = registerAndLogin("other@test.com");
 
         UUID id = createFunction(tokenA, "original");
+        createFunction(tokenA, "Original");
 
         mockMvc.perform(delete("/functions/" + id)
                         .header("Authorization", "Bearer " + tokenA))
                 .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/functions")
+                        .header("Authorization", "Bearer " + tokenA))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.content[0].name").value("Original"))
+                        .andExpect(jsonPath("$.content.length()").value(1));
+
+        mockMvc.perform(get("/functions/" + id)
+                .header("Authorization", "Bearer " + tokenA))
+                        .andExpect(status().isNotFound());
+
+        mockMvc.perform(delete("/functions/" + id)
+                .header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isNotFound());
 
         mockMvc.perform(delete("/functions/" + id)
                         .header("Authorization", "Bearer " + tokenB))
