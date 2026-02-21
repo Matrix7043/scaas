@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
@@ -33,3 +34,12 @@ function App() {
 }
 
 export default App
+=======
+import Editor from "./pages/editor.jsx";
+import Login from "./pages/login.jsx";
+function App() {
+  return <Login />
+}
+
+export default App;
+>>>>>>> 3ce60ba (-> The beginning)
