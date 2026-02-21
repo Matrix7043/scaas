@@ -158,9 +158,7 @@ public class FunctionServiceUnitTest {
 
         when(functionRepository.findByIdAndOwner(eq(functionId), eq(mockUser))).thenReturn(Optional.of(function));
 
-        FunctionResponse deleted = functionService.deleteFunctionById(functionId);
-        assertNotNull(deleted);
-        assertEquals("Test1", deleted.name());
+        functionService.deleteFunctionById(functionId);
         verify(functionRepository).findByIdAndOwner(eq(functionId), eq(mockUser));
         verify(functionRepository).delete(function);
 

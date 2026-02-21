@@ -50,7 +50,7 @@ class AuthAndFunctionITest {
                             "password": "password123"
                         }
                         """.formatted(email, email)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         return mockMvc.perform(post("/auth/login")
                         .contentType(String.valueOf(MediaType.APPLICATION_JSON))
@@ -78,7 +78,7 @@ class AuthAndFunctionITest {
                             "entryPoint": "handler"
                         }
                         """.formatted(name)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -206,9 +206,7 @@ class AuthAndFunctionITest {
 
         mockMvc.perform(delete("/functions/" + id)
                         .header("Authorization", "Bearer " + tokenA))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("original"))
-                .andExpect(jsonPath("$.runtime").value("PYTHON"));
+                .andExpect(status().isNoContent());
 
         mockMvc.perform(delete("/functions/" + id)
                         .header("Authorization", "Bearer " + tokenB))

@@ -79,7 +79,7 @@ public class FunctionServiceImpl implements FunctionService {
     }
 
     @Override
-    public FunctionResponse deleteFunctionById(UUID id) {
+    public void deleteFunctionById(UUID id) {
 
         User owner = currentUserService.getCurrentUser();
 
@@ -88,8 +88,6 @@ public class FunctionServiceImpl implements FunctionService {
         );
 
         functionRepository.delete(function);
-
-        return mapper.toFunctionResponse(function);
     }
 
     @Override
