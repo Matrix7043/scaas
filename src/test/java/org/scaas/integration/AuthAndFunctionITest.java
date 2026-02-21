@@ -216,6 +216,21 @@ class AuthAndFunctionITest {
     }
 
     @Test
+    void list_shouldRespectMaxPageSize() throws Exception {
+
+        String token = registerAndLogin("maxPageSize@test.com");
+
+        for (int i = 0; i < 200; i++){
+            createFunction(token, "f" + i);
+        }
+
+        mockMvc.perform(get("/functions?page=0&size=1000")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(100));
+    }
+
+    @Test
     void functions_withoutAuthIsForbidden() throws Exception {
 
         mockMvc.perform(post("/functions")
