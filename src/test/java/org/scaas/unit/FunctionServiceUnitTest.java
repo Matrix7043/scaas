@@ -15,12 +15,15 @@ import org.scaas.protocol.requests.CreateFunctionRequest;
 import org.scaas.protocol.requests.UpdateFunctionRequest;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.security.CurrentUserService;
+import org.scaas.services.StorageService;
 import org.scaas.services.impl.FunctionServiceImpl;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,6 +42,9 @@ public class FunctionServiceUnitTest {
     @Mock
     private CurrentUserService currentUserService;
 
+    @Mock
+    private StorageService storageService;
+
     private final ToFunctionResponse mapper =  new ToFunctionResponse();
 
     private FunctionServiceImpl functionService;
@@ -53,6 +59,7 @@ public class FunctionServiceUnitTest {
                 .build();
         functionService = new FunctionServiceImpl(currentUserService,
                 functionRepository,
+                storageService,
                 mapper);
     }
 
@@ -222,5 +229,86 @@ public class FunctionServiceUnitTest {
                 () -> functionService.updateFunctionById(id, request));
     }
 
+    @Test
+    void replaceArtifact_firstUpload_callsStore() throws IOException {
 
+        when(currentUserService.getCurrentUser()).thenReturn(mockUser);
+        UUID id = UUID.randomUUID();
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getOriginalFilename()).thenReturn("Test1.py");
+
+        when(storageService.upload(eq(file), eq(id))).thenReturn("/path/to/file");
+
+        Function function = Function.builder()
+                .id(id)
+                .storagePath(null)
+                .build();
+
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser))).
+                thenReturn(Optional.of(function));
+
+        functionService.replaceArtifact(id, file);
+
+        verify(storageService).upload(eq(file), eq(id));
+        verify(storageService, never()).overwrite(any(), any());
+        verify(functionRepository).save(eq(function));
+    }
+
+    @Test
+    void replaceArtifact_overwrite_callsOverwrite() throws IOException {
+
+        when(currentUserService.getCurrentUser()).thenReturn(mockUser);
+        UUID id = UUID.randomUUID();
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getOriginalFilename()).thenReturn("Test1.py");
+
+        Function function = Function.builder()
+                .id(id)
+                .storagePath("/path/to/file")
+                .build();
+
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser))).
+                thenReturn(Optional.of(function));
+
+        functionService.replaceArtifact(id, file);
+
+        verify(storageService).overwrite(eq("/path/to/file"), eq(file));
+        verify(storageService, never()).upload(any(), any());
+        verify(functionRepository).save(eq(function));
+    }
+
+    @Test
+    void replaceArtifact_throwsIfInvalidExtension() {
+        when(currentUserService.getCurrentUser()).thenReturn(mockUser);
+        UUID id = UUID.randomUUID();
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getOriginalFilename()).thenReturn("Test1.java");
+
+        Function function = Function.builder()
+                .id(id)
+                .build();
+
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
+                .thenReturn(Optional.of(function));
+
+        assertThrows(RuntimeException.class, () -> functionService.replaceArtifact(id, file));
+        verifyNoInteractions(storageService);
+    }
+
+    @Test
+    void replaceArtifact_functionNotFound_throwsException() {
+        when(currentUserService.getCurrentUser()).thenReturn(mockUser);
+        UUID id = UUID.randomUUID();
+        MultipartFile file = mock(MultipartFile.class);
+
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
+                .thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> functionService.replaceArtifact(id, file));
+        verifyNoInteractions(storageService);
+    }
 }

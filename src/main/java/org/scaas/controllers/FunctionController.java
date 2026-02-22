@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -37,6 +38,12 @@ public class FunctionController {
     public ResponseEntity<FunctionResponse> updateById(@PathVariable UUID id,@Valid @RequestBody UpdateFunctionRequest request) {
         FunctionResponse response = functionService.updateFunctionById(id, request);
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PostMapping("/{id}/artifacts")
+    public ResponseEntity<Void> upload(@PathVariable UUID id, @RequestParam("file") MultipartFile file) {
+        functionService.replaceArtifact(id, file);
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     @DeleteMapping("/{id}")

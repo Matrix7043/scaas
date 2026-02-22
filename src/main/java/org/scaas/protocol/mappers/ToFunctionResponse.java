@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 public class ToFunctionResponse {
 
     public FunctionResponse toFunctionResponse(Function function) {
+
         return FunctionResponse.builder()
                 .id(function.getId())
                 .name(function.getName())
@@ -15,6 +16,7 @@ public class ToFunctionResponse {
                 .entryPoint(function.getEntryPoint())
                 .createdAt(function.getCreatedAt())
                 .updatedAt(function.getUpdatedAt())
+                .hasArtifact(function.getStoragePath() != null)
                 .build();
     }
 

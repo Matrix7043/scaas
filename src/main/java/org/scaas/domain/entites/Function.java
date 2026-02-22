@@ -32,6 +32,7 @@ public class Function {
     private Runtime runtime;
     @Column(nullable = false)
     private String entryPoint;
+    private String storagePath;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
