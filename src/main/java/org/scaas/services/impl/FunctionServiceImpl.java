@@ -49,7 +49,7 @@ public class FunctionServiceImpl implements FunctionService {
     public Page<FunctionResponse> getFunctions(Pageable pageable) {
 
         User owner = currentUserService.getCurrentUser();
-        return functionRepository.findByOwner(owner,pageable)
+        return functionRepository.findByOwnerAndDeletedAtIsNull(owner,pageable)
                 .map(mapper::toFunctionResponse);
 
     }
@@ -57,7 +57,7 @@ public class FunctionServiceImpl implements FunctionService {
     public FunctionResponse updateFunctionById(UUID id, UpdateFunctionRequest request) {
 
         User owner = currentUserService.getCurrentUser();
-        Function function = functionRepository.findByIdAndOwner(id, owner).orElseThrow(
+        Function function = functionRepository.findByIdAndOwnerAndDeletedAtIsNull(id, owner).orElseThrow(
                 () -> new ResourceNotFoundException("Function not found")
         );
 
@@ -79,24 +79,24 @@ public class FunctionServiceImpl implements FunctionService {
     }
 
     @Override
-    public FunctionResponse deleteFunctionById(UUID id) {
+    public void deleteFunctionById(UUID id) {
 
         User owner = currentUserService.getCurrentUser();
 
-        Function function = functionRepository.findByIdAndOwner(id, owner).orElseThrow(
+        Function function = functionRepository.findByIdAndOwnerAndDeletedAtIsNull(id, owner).orElseThrow(
                 () -> new ResourceNotFoundException("Function not found")
         );
 
-        functionRepository.delete(function);
+        function.setDeletedAt(LocalDateTime.now());
+        functionRepository.save(function);
 
-        return mapper.toFunctionResponse(function);
     }
 
     @Override
     public FunctionResponse getFunctionById(UUID id) {
         
         User owner = currentUserService.getCurrentUser();
-        Function function = functionRepository.findByIdAndOwner(id, owner)
+        Function function = functionRepository.findByIdAndOwnerAndDeletedAtIsNull(id, owner)
                 .orElseThrow(() -> new ResourceNotFoundException("Function not found"));
 
         return mapper.toFunctionResponse(function);

@@ -11,7 +11,7 @@ import java.util.UUID;
 public interface FunctionService {
     FunctionResponse createFunction(CreateFunctionRequest request);
     FunctionResponse updateFunctionById(UUID id, UpdateFunctionRequest request);
-    FunctionResponse deleteFunctionById(UUID id);
+    void deleteFunctionById(UUID id);
     Page<FunctionResponse> getFunctions(Pageable pageable);
     FunctionResponse getFunctionById(UUID id);
 }
