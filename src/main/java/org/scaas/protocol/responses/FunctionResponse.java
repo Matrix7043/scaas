@@ -12,6 +12,7 @@ public record FunctionResponse(UUID id,
                                String entryPoint,
                                Runtime runtime,
                                LocalDateTime createdAt,
-                               LocalDateTime updatedAt) {
+                               LocalDateTime updatedAt,
+                               Boolean hasArtifact) {
 
 }

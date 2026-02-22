@@ -10,9 +10,9 @@
 	</parent>
 	<groupId>org.scaas</groupId>
 	<artifactId>scaas</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>v0.4.0</version>
 	<name>scaas</name>
-	<description>Demo project for Spring Boot</description>
+	<description>Serverless compute as a Service Platform</description>
 	<url/>
 	<licenses>
 		<license/>

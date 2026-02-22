@@ -7,16 +7,23 @@ import org.junit.jupiter.api.MediaType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.scaas.domain.entites.Function;
+import org.scaas.domain.repositories.FunctionRepository;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -29,6 +36,9 @@ class AuthAndFunctionITest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private FunctionRepository functionRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -241,6 +251,79 @@ class AuthAndFunctionITest {
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(100));
+    }
+
+    @Test
+    void uploadArtifact_success() throws Exception {
+
+        String token = registerAndLogin("artifact@test.com");
+
+        UUID id = createFunction(token, "artifact");
+
+        MockMultipartFile file = new MockMultipartFile("file",
+                "artifact.py",
+                "text/plain",
+                "print('hello world')".getBytes());
+
+        mockMvc.perform(multipart("/functions/{id}/artifacts", id)
+                .header("Authorization", "Bearer " + token)
+                .file(file))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/functions/" + id)
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("artifact"))
+                .andExpect(jsonPath("$.hasArtifact").value(true));
+
+        Function function = functionRepository.findById(id).orElse(null);
+        assertNotNull(function);
+
+        String path = function.getStoragePath();
+        assertTrue(Files.exists(Paths.get(path)));
+    }
+
+    @Test
+    void uploadArtifact_updatesIfAlreadyPresent() throws Exception {
+
+        String token = registerAndLogin("artifact@test.com");
+
+        UUID id = createFunction(token, "artifact");
+
+        MockMultipartFile file = new MockMultipartFile("file",
+                "artifact.py",
+                "text/plain",
+                "print('hello world')".getBytes());
+
+        mockMvc.perform(multipart("/functions/{id}/artifacts", id)
+                        .header("Authorization", "Bearer " + token)
+                        .file(file))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/functions/" + id)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("artifact"))
+                .andExpect(jsonPath("$.hasArtifact").value(true));
+
+        MockMultipartFile file2 = new MockMultipartFile("file",
+                "artifiact.py",
+                "text/plain",
+                "print('hello world!!')".getBytes());
+
+        mockMvc.perform(multipart("/functions/{id}/artifacts", id)
+                .header("Authorization", "Bearer " + token)
+                .file(file2))
+                .andExpect(status().isOk());
+
+        Function function = functionRepository.findById(id).orElse(null);
+        assertNotNull(function);
+
+        String path = function.getStoragePath();
+        Path path1 = Paths.get(path);
+        assertTrue(Files.exists(path1));
+        String content = Files.readString(path1);
+        assertEquals("print('hello world!!')", content);
     }
 
     @Test

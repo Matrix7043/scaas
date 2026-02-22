@@ -9,3 +9,6 @@ spring:
   h2:
     console:
       enabled: false
+app:
+  storage:
+    base-path: storage-test

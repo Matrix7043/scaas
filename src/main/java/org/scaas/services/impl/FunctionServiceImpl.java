@@ -5,16 +5,21 @@ import org.scaas.domain.entites.Function;
 import org.scaas.domain.entites.User;
 import org.scaas.domain.repositories.FunctionRepository;
 import org.scaas.exceptions.ResourceNotFoundException;
+import org.scaas.exceptions.StorageException;
 import org.scaas.protocol.mappers.ToFunctionResponse;
 import org.scaas.protocol.requests.CreateFunctionRequest;
 import org.scaas.protocol.requests.UpdateFunctionRequest;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.security.CurrentUserService;
 import org.scaas.services.FunctionService;
+import org.scaas.services.StorageService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -24,6 +29,7 @@ public class FunctionServiceImpl implements FunctionService {
 
     private final CurrentUserService currentUserService;
     private final FunctionRepository functionRepository;
+    private final StorageService storageService;
     private final ToFunctionResponse mapper;
 
     @Override
@@ -53,6 +59,47 @@ public class FunctionServiceImpl implements FunctionService {
                 .map(mapper::toFunctionResponse);
 
     }
+
+    @Override
+    @Transactional
+    public void replaceArtifact(UUID id, MultipartFile file) {
+
+        User owner = currentUserService.getCurrentUser();
+        Function function = functionRepository.findByIdAndOwnerAndDeletedAtIsNull(id, owner).orElseThrow(
+                () -> new ResourceNotFoundException("Function with id " + id + " not found")
+        );
+
+        if(file == null || file.isEmpty()) {
+            throw new RuntimeException("Empty file");
+        }
+
+        String originalName = file.getOriginalFilename();
+
+        if(originalName == null || !originalName.contains(".")) {
+            throw new RuntimeException("Invalid file format");
+        }
+
+        String extension = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
+        if(!extension.equals(".py")) {
+            throw new RuntimeException("Invalid file format");
+        }
+
+        try {
+            if(function.getStoragePath() == null) {
+                String newPath = storageService.upload(file, id);
+                function.setStoragePath(newPath);
+            } else {
+                storageService.overwrite(function.getStoragePath(), file);
+            }
+        } catch (IOException e){
+            throw new StorageException("File storage failed", e);
+        }
+
+        function.setUpdatedAt(LocalDateTime.now());
+        functionRepository.save(function);
+
+    }
+
     @Override
     public FunctionResponse updateFunctionById(UUID id, UpdateFunctionRequest request) {
 
