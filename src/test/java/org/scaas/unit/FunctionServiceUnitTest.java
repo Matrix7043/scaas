@@ -99,7 +99,7 @@ public class FunctionServiceUnitTest {
         Pageable pageable = PageRequest.of(0, 2);
         Page<Function> page = new PageImpl<>(List.of(function, function2), pageable, 5);
 
-        when(functionRepository.findByOwner(mockUser, pageable)).thenReturn(page);
+        when(functionRepository.findByOwnerAndDeletedAtIsNull(mockUser, pageable)).thenReturn(page);
 
         Page<FunctionResponse> result = functionService.getFunctions(pageable);
 
@@ -108,7 +108,7 @@ public class FunctionServiceUnitTest {
         assertEquals(5, result.getTotalElements());
         assertEquals("Test1", result.getContent().getFirst().name());
 
-        verify(functionRepository).findByOwner(mockUser, pageable);
+        verify(functionRepository).findByOwnerAndDeletedAtIsNull(mockUser, pageable);
 
     }
 
@@ -123,7 +123,7 @@ public class FunctionServiceUnitTest {
                         .runtime(Runtime.PYTHON)
                         .entryPoint("handler")
                         .build();
-        when(functionRepository.findByIdAndOwner(any(UUID.class), eq(mockUser))).thenReturn(Optional.of(request));
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(any(UUID.class), eq(mockUser))).thenReturn(Optional.of(request));
         when(functionRepository.save(any(Function.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         UpdateFunctionRequest updateFunctionRequest = UpdateFunctionRequest.builder()
@@ -137,7 +137,7 @@ public class FunctionServiceUnitTest {
         assertNotNull(updated);
         assertEquals("Test2", updated.name());
         assertEquals("main", updated.entryPoint());
-        verify(functionRepository).findByIdAndOwner(any(UUID.class), eq(mockUser));
+        verify(functionRepository).findByIdAndOwnerAndDeletedAtIsNull(any(UUID.class), eq(mockUser));
         verify(functionRepository).save(any(Function.class));
 
     }
@@ -156,13 +156,11 @@ public class FunctionServiceUnitTest {
                 .entryPoint("main")
                 .build();
 
-        when(functionRepository.findByIdAndOwner(eq(functionId), eq(mockUser))).thenReturn(Optional.of(function));
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(functionId), eq(mockUser))).thenReturn(Optional.of(function));
 
-        FunctionResponse deleted = functionService.deleteFunctionById(functionId);
-        assertNotNull(deleted);
-        assertEquals("Test1", deleted.name());
-        verify(functionRepository).findByIdAndOwner(eq(functionId), eq(mockUser));
-        verify(functionRepository).delete(function);
+        functionService.deleteFunctionById(functionId);
+        verify(functionRepository).findByIdAndOwnerAndDeletedAtIsNull(eq(functionId), eq(mockUser));
+        verify(functionRepository).save(eq(function));
 
     }
 
@@ -179,13 +177,13 @@ public class FunctionServiceUnitTest {
                 .entryPoint("handler")
                 .build();
 
-        when(functionRepository.findByIdAndOwner(eq(id), eq(mockUser))).thenReturn(Optional.of(function));
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser))).thenReturn(Optional.of(function));
 
         FunctionResponse functionResponse = functionService.getFunctionById(id);
 
         assertNotNull(functionResponse);
         assertEquals("Test1", functionResponse.name());
-        verify(functionRepository).findByIdAndOwner(eq(id), eq(mockUser));
+        verify(functionRepository).findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser));
     }
 
     @Test
@@ -194,7 +192,7 @@ public class FunctionServiceUnitTest {
 
         UUID id = UUID.randomUUID();
 
-        when(functionRepository.findByIdAndOwner(eq(id), eq(mockUser))).thenReturn(Optional.empty());
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser))).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class,
                 ()-> functionService.getFunctionById(id)
@@ -206,7 +204,7 @@ public class FunctionServiceUnitTest {
         when(currentUserService.getCurrentUser()).thenReturn(mockUser);
 
         UUID id = UUID.randomUUID();
-        when(functionRepository.findByIdAndOwner(eq(id), eq(mockUser))).thenReturn(Optional.empty());
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser))).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class,
                 () -> functionService.deleteFunctionById(id));
@@ -218,7 +216,7 @@ public class FunctionServiceUnitTest {
 
         UUID id = UUID.randomUUID();
         UpdateFunctionRequest request = mock(UpdateFunctionRequest.class);
-        when(functionRepository.findByIdAndOwner(eq(id), eq(mockUser))).thenReturn(Optional.empty());
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser))).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class,
                 () -> functionService.updateFunctionById(id, request));

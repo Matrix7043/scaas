@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.scaas.protocol.requests.LoginRequest;
 import org.scaas.protocol.requests.RegisterRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +20,7 @@ public class AuthController {
 
         authService.register(registerRequest);
 
-        return ResponseEntity.ok("User registered successfully");
+        return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
     }
 
     @PostMapping("/login")

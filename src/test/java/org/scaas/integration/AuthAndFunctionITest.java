@@ -50,7 +50,7 @@ class AuthAndFunctionITest {
                             "password": "password123"
                         }
                         """.formatted(email, email)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         return mockMvc.perform(post("/auth/login")
                         .contentType(String.valueOf(MediaType.APPLICATION_JSON))
@@ -78,7 +78,7 @@ class AuthAndFunctionITest {
                             "entryPoint": "handler"
                         }
                         """.formatted(name)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -203,12 +203,25 @@ class AuthAndFunctionITest {
         String tokenB = registerAndLogin("other@test.com");
 
         UUID id = createFunction(tokenA, "original");
+        createFunction(tokenA, "Original");
 
         mockMvc.perform(delete("/functions/" + id)
                         .header("Authorization", "Bearer " + tokenA))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("original"))
-                .andExpect(jsonPath("$.runtime").value("PYTHON"));
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/functions")
+                        .header("Authorization", "Bearer " + tokenA))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.content[0].name").value("Original"))
+                        .andExpect(jsonPath("$.content.length()").value(1));
+
+        mockMvc.perform(get("/functions/" + id)
+                .header("Authorization", "Bearer " + tokenA))
+                        .andExpect(status().isNotFound());
+
+        mockMvc.perform(delete("/functions/" + id)
+                .header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isNotFound());
 
         mockMvc.perform(delete("/functions/" + id)
                         .header("Authorization", "Bearer " + tokenB))

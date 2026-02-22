@@ -13,7 +13,7 @@ import java.util.UUID;
 @Repository
 public interface FunctionRepository extends JpaRepository<Function, UUID> {
 
-    Page<Function> findByOwner(User owner, Pageable pageable);
-    Optional<Function> findByIdAndOwner(UUID id, User owner);
+    Page<Function> findByOwnerAndDeletedAtIsNull(User owner, Pageable pageable);
+    Optional<Function> findByIdAndOwnerAndDeletedAtIsNull(UUID id, User owner);
 
 }

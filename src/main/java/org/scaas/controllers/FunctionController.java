@@ -8,6 +8,8 @@ import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.services.FunctionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -20,27 +22,32 @@ public class FunctionController {
     private final FunctionService functionService;
 
     @PostMapping()
-    public FunctionResponse create(@Valid @RequestBody CreateFunctionRequest request) {
-        return functionService.createFunction(request);
+    public ResponseEntity<FunctionResponse> create(@Valid @RequestBody CreateFunctionRequest request) {
+        FunctionResponse response = functionService.createFunction(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping()
-    public Page<FunctionResponse> list(Pageable pageable) {
-        return functionService.getFunctions(pageable);
+    public ResponseEntity<Page<FunctionResponse>> list(Pageable pageable) {
+        Page<FunctionResponse> response = functionService.getFunctions(pageable);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @PatchMapping("/{id}")
-    public FunctionResponse updateById(@PathVariable UUID id,@Valid @RequestBody UpdateFunctionRequest request) {
-        return functionService.updateFunctionById(id, request);
+    public ResponseEntity<FunctionResponse> updateById(@PathVariable UUID id,@Valid @RequestBody UpdateFunctionRequest request) {
+        FunctionResponse response = functionService.updateFunctionById(id, request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @DeleteMapping("/{id}")
-    public FunctionResponse deleteById(@PathVariable UUID id) {
-        return functionService.deleteFunctionById(id);
+    public ResponseEntity<Void> deleteById(@PathVariable UUID id) {
+        functionService.deleteFunctionById(id);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     @GetMapping("/{id}")
-    public FunctionResponse getById(@PathVariable UUID id) {
-        return functionService.getFunctionById(id);
+    public ResponseEntity<FunctionResponse> getById(@PathVariable UUID id) {
+        FunctionResponse response = functionService.getFunctionById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
