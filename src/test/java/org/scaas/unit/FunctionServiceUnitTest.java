@@ -10,11 +10,13 @@ import org.scaas.domain.entites.User;
 import org.scaas.domain.enumerations.Runtime;
 import org.scaas.domain.repositories.FunctionRepository;
 import org.scaas.exceptions.ResourceNotFoundException;
+import org.scaas.protocol.mappers.ToDeploymentResponse;
 import org.scaas.protocol.mappers.ToFunctionResponse;
 import org.scaas.protocol.requests.CreateFunctionRequest;
 import org.scaas.protocol.requests.UpdateFunctionRequest;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.security.CurrentUserService;
+import org.scaas.services.DeploymentService;
 import org.scaas.services.StorageService;
 import org.scaas.services.impl.FunctionServiceImpl;
 import org.springframework.data.domain.Page;
@@ -45,7 +47,12 @@ public class FunctionServiceUnitTest {
     @Mock
     private StorageService storageService;
 
+    @Mock
+    private DeploymentService deploymentService;
+
     private final ToFunctionResponse mapper =  new ToFunctionResponse();
+
+    private final ToDeploymentResponse dMapper =  new ToDeploymentResponse();
 
     private FunctionServiceImpl functionService;
 
@@ -60,7 +67,9 @@ public class FunctionServiceUnitTest {
         functionService = new FunctionServiceImpl(currentUserService,
                 functionRepository,
                 storageService,
-                mapper);
+                deploymentService,
+                mapper,
+                dMapper);
     }
 
     @Test

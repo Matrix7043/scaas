@@ -17,6 +17,8 @@ public class ToFunctionResponse {
                 .createdAt(function.getCreatedAt())
                 .updatedAt(function.getUpdatedAt())
                 .hasArtifact(function.getStoragePath() != null)
+                .deploymentStatus(function.getDeploymentStatus())
+                .deployedAt(function.getDeployedAt())
                 .build();
     }
 

@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +18,11 @@ public class LocalStorageService implements StorageService {
 
     @Value("${app.storage.base-path}")
     private String basePath;
+
+    @Override
+    public File getFile(String storagePath) {
+        return new File(storagePath);
+    }
 
     @Override
     public String upload(MultipartFile file, UUID functionId) throws IOException {
