@@ -1,6 +1,7 @@
 package org.scaas.services.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.scaas.domain.entites.Function;
 import org.scaas.domain.entites.User;
 import org.scaas.domain.enumerations.DeploymentStatus;
@@ -80,17 +81,7 @@ public class FunctionServiceImpl implements FunctionService {
                 () -> new ResourceNotFoundException("Function with id " + id + " not found")
         );
 
-        if(file == null || file.isEmpty()) {
-            throw new RuntimeException("Empty file");
-        }
-
-        String originalName = file.getOriginalFilename();
-
-        if(originalName == null || !originalName.contains(".")) {
-            throw new RuntimeException("Invalid file format");
-        }
-
-        String extension = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
+        String extension = getExtension(file, function);
         if(!extension.equals(".py")) {
             throw new RuntimeException("Invalid file format");
         }
@@ -120,6 +111,24 @@ public class FunctionServiceImpl implements FunctionService {
         function.setUpdatedAt(LocalDateTime.now());
         functionRepository.save(function);
 
+    }
+
+    private static @NonNull String getExtension(MultipartFile file, Function function) {
+        if(DeploymentStatus.DEPLOYING.equals(function.getDeploymentStatus())){
+            throw new RuntimeException("Artifact cannot be updated when deployment is in progress");
+        }
+
+        if(file == null || file.isEmpty()) {
+            throw new RuntimeException("Empty file");
+        }
+
+        String originalName = file.getOriginalFilename();
+
+        if(originalName == null || !originalName.contains(".")) {
+            throw new RuntimeException("Invalid file format");
+        }
+
+        return originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
     }
 
     @Override
