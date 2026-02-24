@@ -6,6 +6,7 @@ import org.scaas.domain.entites.Function;
 import org.scaas.domain.entites.User;
 import org.scaas.domain.enumerations.DeploymentStatus;
 import org.scaas.domain.repositories.FunctionRepository;
+import org.scaas.exceptions.DeploymentServiceException;
 import org.scaas.exceptions.ResourceNotFoundException;
 import org.scaas.exceptions.StorageException;
 import org.scaas.protocol.mappers.ToDeploymentResponse;
@@ -40,6 +41,7 @@ public class FunctionServiceImpl implements FunctionService {
     private final FunctionRepository functionRepository;
     private final StorageService storageService;
     private final DeploymentService deploymentService;
+    private final HashingUtil hashingUtil;
     private final ToFunctionResponse mapper;
     private final ToDeploymentResponse dMapper;
 
@@ -57,9 +59,9 @@ public class FunctionServiceImpl implements FunctionService {
                 .deploymentStatus(DeploymentStatus.NOT_DEPLOYED)
                 .build();
 
-        functionRepository.save(function);
+        Function updated = functionRepository.save(function);
 
-        return mapper.toFunctionResponse(function);
+        return mapper.toFunctionResponse(updated);
 
     }
 
@@ -86,7 +88,7 @@ public class FunctionServiceImpl implements FunctionService {
             throw new RuntimeException("Invalid file format");
         }
 
-        String newHash = HashingUtil.hashFile(file);
+        String newHash = hashingUtil.hashFile(file);
         if(function.getHashCode() != null && Objects.equals(newHash, function.getHashCode())) {
             throw new RuntimeException("File already present");
         }
@@ -115,7 +117,7 @@ public class FunctionServiceImpl implements FunctionService {
 
     private static @NonNull String getExtension(MultipartFile file, Function function) {
         if(DeploymentStatus.DEPLOYING.equals(function.getDeploymentStatus())){
-            throw new RuntimeException("Artifact cannot be updated when deployment is in progress");
+            throw new DeploymentServiceException("Artifact cannot be updated when deployment is in progress");
         }
 
         if(file == null || file.isEmpty()) {
@@ -139,6 +141,10 @@ public class FunctionServiceImpl implements FunctionService {
                 () -> new ResourceNotFoundException("Function not found")
         );
 
+        if (DeploymentStatus.DEPLOYING.equals(function.getDeploymentStatus())) {
+            throw new DeploymentServiceException("Function cannot be updated when deployment is in progress");
+        }
+
         if(request.name() != null && !request.name().isEmpty()) {
             function.setName(request.name());
         }
@@ -150,7 +156,10 @@ public class FunctionServiceImpl implements FunctionService {
         }
 
         function.setUpdatedAt(LocalDateTime.now());
-
+        if(DeploymentStatus.DEPLOYED.equals(function.getDeploymentStatus())
+        || DeploymentStatus.FAILED.equals(function.getDeploymentStatus())) {
+            function.setDeploymentStatus(DeploymentStatus.OUTDATED);
+        }
         Function updated = functionRepository.save(function);
 
         return mapper.toFunctionResponse(updated);
@@ -164,7 +173,15 @@ public class FunctionServiceImpl implements FunctionService {
         Function function = functionRepository.findByIdAndOwnerAndDeletedAtIsNull(id, owner).orElseThrow(
                 () -> new ResourceNotFoundException("Function not found")
         );
-        deploymentService.deleteDeployment(id);
+
+        if (DeploymentStatus.DEPLOYING.equals(function.getDeploymentStatus())) {
+            throw new DeploymentServiceException("Function cannot be deleted when deployment is in progress");
+        }
+
+        if(function.getHashCode() != null && function.getStoragePath() != null) {
+            deploymentService.deleteDeployment(id, function.getHashCode());
+            deploymentService.deleteDeployment(id, function.getDeployedHashcode());
+        }
         function.setDeletedAt(LocalDateTime.now());
         functionRepository.save(function);
 
@@ -190,7 +207,7 @@ public class FunctionServiceImpl implements FunctionService {
         );
 
         if(DeploymentStatus.DEPLOYING.equals(function.getDeploymentStatus())){
-            throw new RuntimeException("Deployment is already in progress");
+            throw new DeploymentServiceException("Deployment is already in progress");
         }
 
         File file = storageService.getFile(function.getStoragePath());
@@ -211,7 +228,7 @@ public class FunctionServiceImpl implements FunctionService {
             if (!deployed || hashChange) {
                 function.setDeploymentStatus(DeploymentStatus.DEPLOYING);
                 functionRepository.save(function);
-                url = deploymentService.deploy(id, file);
+                url = deploymentService.deploy(id, function.getHashCode(), file);
             } else throw new RuntimeException("No visible changes for redeployment");
         } catch (ObjectOptimisticLockingFailureException e){
             throw new RuntimeException("Deployment is already in progress");
@@ -228,9 +245,9 @@ public class FunctionServiceImpl implements FunctionService {
         function.setDeploymentStatus(DeploymentStatus.DEPLOYED);
         function.setDeployedAt(time);
         function.setInvocationURL(url);
-        functionRepository.save(function);
+        Function updated = functionRepository.save(function);
 
-        return dMapper.toDeploymentResponse(function);
+        return dMapper.toDeploymentResponse(updated);
     }
 
 }

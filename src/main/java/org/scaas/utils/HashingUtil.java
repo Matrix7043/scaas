@@ -1,5 +1,6 @@
 package org.scaas.utils;
 
+import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -9,9 +10,10 @@ import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+@Component
 public class HashingUtil {
 
-    public static String hashFile(MultipartFile file) {
+    public String hashFile(MultipartFile file) {
         try(InputStream is = file.getInputStream()) {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] bytes = new byte[1024*8];
@@ -33,7 +35,7 @@ public class HashingUtil {
         }
     }
 
-    public static String hashFile(File file) {
+    public String hashFile(File file) {
         try(InputStream is = new FileInputStream(file)) {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] bytes = new byte[1024*8];

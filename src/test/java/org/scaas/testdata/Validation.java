@@ -1,10 +1,29 @@
 package org.scaas.testdata;
 
 import org.junit.jupiter.params.provider.Arguments;
+import org.scaas.domain.enumerations.DeploymentStatus;
 
 import java.util.stream.Stream;
 
 public class Validation {
+
+    private static Stream<Arguments> deploymentStatusForUpdate() {
+        return Stream.of(
+                Arguments.of(DeploymentStatus.DEPLOYED, DeploymentStatus.OUTDATED),
+                Arguments.of(DeploymentStatus.OUTDATED, DeploymentStatus.OUTDATED),
+                Arguments.of(DeploymentStatus.FAILED, DeploymentStatus.OUTDATED),
+                Arguments.of(DeploymentStatus.NOT_DEPLOYED, DeploymentStatus.NOT_DEPLOYED)
+        );
+    }
+
+    private static Stream<Arguments> deploymentStatusForReplaceArtifact() {
+        return Stream.of(
+                Arguments.of(DeploymentStatus.DEPLOYED, DeploymentStatus.OUTDATED),
+                Arguments.of(DeploymentStatus.OUTDATED, DeploymentStatus.OUTDATED),
+                Arguments.of(DeploymentStatus.FAILED, DeploymentStatus.OUTDATED),
+                Arguments.of(DeploymentStatus.NOT_DEPLOYED, DeploymentStatus.OUTDATED)
+        );
+    }
 
     private static Stream<Arguments> invalidRegisterRequests() {
         return Stream.of(
