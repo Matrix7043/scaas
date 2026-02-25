@@ -57,6 +57,9 @@ public class FunctionServiceImpl implements FunctionService {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .deploymentStatus(DeploymentStatus.NOT_DEPLOYED)
+                .cpuCores(request.cpuCores())
+                .memory(request.mem())
+                .pidCount(request.pids())
                 .build();
 
         Function updated = functionRepository.save(function);
@@ -148,13 +151,18 @@ public class FunctionServiceImpl implements FunctionService {
         if(request.name() != null && !request.name().isEmpty()) {
             function.setName(request.name());
         }
-        if(request.runtime() != null){
-            function.setRuntime(request.runtime());
-        }
         if(request.entryPoint() != null && !request.entryPoint().isEmpty()) {
             function.setEntryPoint(request.entryPoint());
         }
-
+        if(request.cpuCores() != null) {
+            function.setCpuCores(request.cpuCores());
+        }
+        if(request.mem() != null) {
+            function.setMemory(request.mem());
+        }
+        if(request.pids() != null ) {
+            function.setPidCount(request.pids());
+        }
         function.setUpdatedAt(LocalDateTime.now());
         if(DeploymentStatus.DEPLOYED.equals(function.getDeploymentStatus())
         || DeploymentStatus.FAILED.equals(function.getDeploymentStatus())) {

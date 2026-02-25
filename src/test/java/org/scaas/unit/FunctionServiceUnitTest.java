@@ -93,7 +93,6 @@ public class FunctionServiceUnitTest {
         CreateFunctionRequest request = CreateFunctionRequest.builder()
                 .name("Test1")
                 .runtime(Runtime.PYTHON)
-                .entryPoint("main")
                 .build();
 
         FunctionResponse result = functionService.createFunction(request);
@@ -101,6 +100,10 @@ public class FunctionServiceUnitTest {
         assertNotNull(result);
         assertEquals("Test1", result.name());
         assertEquals(DeploymentStatus.NOT_DEPLOYED, result.deploymentStatus());
+        assertEquals("handler",  result.entryPoint());
+        assertEquals(0.5,  result.cpuCores());
+        assertEquals(256,  result.memory());
+        assertEquals(50, result.pid());
         assertEquals(false, result.hasArtifact());
 
         verify(currentUserService).getCurrentUser();
@@ -153,7 +156,6 @@ public class FunctionServiceUnitTest {
                 .id(UUID.randomUUID())
                 .name("Test1")
                 .runtime(Runtime.PYTHON)
-                .entryPoint("handler")
                 .deploymentStatus(have)
                 .build();
         when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(any(UUID.class), eq(mockUser))).thenReturn(Optional.of(request));
@@ -162,14 +164,18 @@ public class FunctionServiceUnitTest {
         UpdateFunctionRequest updateFunctionRequest = UpdateFunctionRequest.builder()
                 .name("Test2")
                 .entryPoint("main")
-                .runtime(Runtime.PYTHON)
+                .pids(64)
+                .mem(1024)
+                .cpuCores(2.5)
                 .build();
 
         FunctionResponse updated = functionService.updateFunctionById(UUID.randomUUID(), updateFunctionRequest);
 
         assertNotNull(updated);
         assertEquals("Test2", updated.name());
-        assertEquals("main", updated.entryPoint());
+        assertEquals(1024, updated.memory());
+        assertEquals(2.5, updated.cpuCores());
+        assertEquals(64, updated.pid());
         assertEquals(need, updated.deploymentStatus());
         verify(functionRepository).findByIdAndOwnerAndDeletedAtIsNull(any(UUID.class), eq(mockUser));
         verify(functionRepository).save(any(Function.class));

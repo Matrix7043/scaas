@@ -45,6 +45,13 @@ public class Function {
     private String invocationURL;
 
     @Column(nullable = false)
+    private double cpuCores;
+    @Column(nullable = false)
+    private int memory;
+    @Column(nullable = false)
+    private int pidCount;
+
+    @Column(nullable = false)
     private LocalDateTime createdAt;
     @Column(nullable = false)
     private LocalDateTime updatedAt;
