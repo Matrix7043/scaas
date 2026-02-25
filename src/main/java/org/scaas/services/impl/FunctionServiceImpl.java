@@ -92,7 +92,7 @@ public class FunctionServiceImpl implements FunctionService {
         }
 
         String newHash = hashingUtil.hashFile(file);
-        if(function.getHashCode() != null && Objects.equals(newHash, function.getHashCode())) {
+        if(function.getCurrentHashCode() != null && Objects.equals(newHash, function.getCurrentHashCode())) {
             throw new RuntimeException("File already present");
         }
         if(DeploymentStatus.DEPLOYED.equals(function.getDeploymentStatus())
@@ -108,7 +108,7 @@ public class FunctionServiceImpl implements FunctionService {
             } else {
                 storageService.overwrite(function.getStoragePath(), file);
             }
-            function.setHashCode(newHash);
+            function.setCurrentHashCode(newHash);
         } catch (IOException e){
             throw new StorageException("File storage failed", e);
         }
@@ -186,8 +186,8 @@ public class FunctionServiceImpl implements FunctionService {
             throw new DeploymentServiceException("Function cannot be deleted when deployment is in progress");
         }
 
-        if(function.getHashCode() != null && function.getStoragePath() != null) {
-            deploymentService.deleteDeployment(id, function.getHashCode());
+        if(function.getCurrentHashCode() != null && function.getStoragePath() != null) {
+            deploymentService.deleteDeployment(id, function.getCurrentHashCode());
             deploymentService.deleteDeployment(id, function.getDeployedHashcode());
         }
         function.setDeletedAt(LocalDateTime.now());
@@ -218,28 +218,37 @@ public class FunctionServiceImpl implements FunctionService {
             throw new DeploymentServiceException("Deployment is already in progress");
         }
 
+        if(function.getStoragePath() == null){
+            throw new ResourceNotFoundException("Artifact cannot be found, please upload or save");
+        }
+
         File file = storageService.getFile(function.getStoragePath());
 
-        if(!file.exists()) {
+        if(file == null || !file.exists()) {
             throw new RuntimeException("File does not exist");
         }
 
-        if(function.getHashCode() == null){
+        if(function.getCurrentHashCode() == null){
             throw new RuntimeException("Hash code not found");
         }
 
         boolean deployed = DeploymentStatus.DEPLOYED.equals(function.getDeploymentStatus());
-        boolean hashChange = !Objects.equals(function.getHashCode(), function.getDeployedHashcode());
+        boolean hashChange = !Objects.equals(function.getCurrentHashCode(), function.getDeployedHashcode());
         String url;
 
         try {
             if (!deployed || hashChange) {
                 function.setDeploymentStatus(DeploymentStatus.DEPLOYING);
                 functionRepository.save(function);
-                url = deploymentService.deploy(id, function.getHashCode(), file);
+                url = deploymentService.deploy(id,
+                        function.getCurrentHashCode(),
+                        file,
+                        function.getCpuCores(),
+                        function.getMemory(),
+                        function.getPidCount());
             } else throw new RuntimeException("No visible changes for redeployment");
         } catch (ObjectOptimisticLockingFailureException e){
-            throw new RuntimeException("Deployment is already in progress");
+            throw new DeploymentServiceException("Deployment is already in progress");
         } catch (Exception e){
             function.setDeploymentStatus(DeploymentStatus.FAILED);
             function.setUpdatedAt(LocalDateTime.now());
@@ -249,7 +258,7 @@ public class FunctionServiceImpl implements FunctionService {
 
         LocalDateTime time =  LocalDateTime.now();
         function.setUpdatedAt(time);
-        function.setDeployedHashcode(function.getHashCode());
+        function.setDeployedHashcode(function.getCurrentHashCode());
         function.setDeploymentStatus(DeploymentStatus.DEPLOYED);
         function.setDeployedAt(time);
         function.setInvocationURL(url);

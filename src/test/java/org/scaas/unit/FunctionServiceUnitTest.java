@@ -19,6 +19,7 @@ import org.scaas.protocol.mappers.ToDeploymentResponse;
 import org.scaas.protocol.mappers.ToFunctionResponse;
 import org.scaas.protocol.requests.CreateFunctionRequest;
 import org.scaas.protocol.requests.UpdateFunctionRequest;
+import org.scaas.protocol.responses.DeploymentResponse;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.security.CurrentUserService;
 import org.scaas.services.DeploymentService;
@@ -31,6 +32,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -216,7 +218,7 @@ public class FunctionServiceUnitTest {
 
         if(deployed){
             function.setDeployedHashcode("Not null deployed hashcode");
-            function.setHashCode("Not null");
+            function.setCurrentHashCode("Not null");
             function.setStoragePath("Not null");
         }
 
@@ -226,7 +228,7 @@ public class FunctionServiceUnitTest {
         verify(functionRepository).findByIdAndOwnerAndDeletedAtIsNull(eq(functionId), eq(mockUser));
         verify(functionRepository).save(eq(function));
         if(deployed){
-            verify(deploymentService).deleteDeployment(eq(functionId), eq(function.getHashCode()));
+            verify(deploymentService).deleteDeployment(eq(functionId), eq(function.getCurrentHashCode()));
             verify(deploymentService).deleteDeployment(eq(functionId), eq(function.getDeployedHashcode()));
         }
         else {
@@ -333,7 +335,7 @@ public class FunctionServiceUnitTest {
 
         Function function = Function.builder()
                 .id(id)
-                .hashCode("I am Hash")
+                .currentHashCode("I am Hash")
                 .deploymentStatus(have)
                 .build();
 
@@ -366,7 +368,7 @@ public class FunctionServiceUnitTest {
         Function function = Function.builder()
                 .id(id)
                 .storagePath("/path/to/file")
-                .hashCode("I am Hash")
+                .currentHashCode("I am Hash")
                 .deploymentStatus(have)
                 .build();
 
@@ -432,5 +434,195 @@ public class FunctionServiceUnitTest {
         assertThrows(ResourceNotFoundException.class,
                 () -> functionService.replaceArtifact(id, file));
         verifyNoInteractions(storageService);
+    }
+
+    @Test
+    void deployFunction_shouldDeployTheFunctionIfStatusIsNOT_DEPLOYED() {
+        when(currentUserService.getCurrentUser()).thenReturn(mockUser);
+        UUID id = UUID.randomUUID();
+
+        Function function = Function.builder()
+                .id(id)
+                .storagePath("/path")
+                .currentHashCode("hash")
+                .cpuCores(0.5)
+                .memory(256)
+                .pidCount(64)
+                .deploymentStatus(DeploymentStatus.NOT_DEPLOYED)
+                .build();
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
+                .thenReturn(Optional.of(function));
+        when(functionRepository.save(any(Function.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        File file = mock(File.class);
+        when(file.exists()).thenReturn(true);
+
+        when(storageService.getFile(eq(function.getStoragePath()))).thenReturn(file);
+        try {
+            when(deploymentService.deploy(eq(id), eq("hash"), eq(file), eq(0.5),
+                    eq(256), eq(64)))
+                    .thenReturn("URL");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        DeploymentResponse deploymentResponse = functionService.deployFunction(id);
+
+        assertNotNull(deploymentResponse);
+        assertEquals(DeploymentStatus.DEPLOYED, deploymentResponse.status());
+        assertEquals("URL", deploymentResponse.invocationURL());
+        assertEquals("hash", function.getDeployedHashcode());
+
+    }
+
+    @Test
+    void deployFunction_shouldNotDeployIfStoragePathNotPresent() {
+        when(currentUserService.getCurrentUser()).thenReturn(mockUser);
+        UUID id = UUID.randomUUID();
+        Function function = Function.builder()
+                .id(id)
+                .currentHashCode("hash")
+                .cpuCores(0.5)
+                .memory(256)
+                .pidCount(64)
+                .deploymentStatus(DeploymentStatus.NOT_DEPLOYED)
+                .build();
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
+                .thenReturn(Optional.of(function));
+        assertThrows(ResourceNotFoundException.class,
+                () -> functionService.deployFunction(id));
+    }
+
+    @Test
+    void deployFunction_shouldNotDeployIfFileDoesNotExist() {
+        when(currentUserService.getCurrentUser()).thenReturn(mockUser);
+        UUID id = UUID.randomUUID();
+        Function function = Function.builder()
+                .id(id)
+                .currentHashCode("hash")
+                .cpuCores(0.5)
+                .memory(256)
+                .pidCount(64)
+                .storagePath("/path/to/file")
+                .deploymentStatus(DeploymentStatus.NOT_DEPLOYED)
+                .build();
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
+                .thenReturn(Optional.of(function));
+        when(storageService.getFile(eq(function.getStoragePath()))).thenReturn(null);
+        assertThrows(RuntimeException.class,
+                () -> functionService.deployFunction(id));
+    }
+
+    @Test
+    void deployFunction_shouldNotDeployIfFileHashNotPresent() {
+        when(currentUserService.getCurrentUser()).thenReturn(mockUser);
+        UUID id = UUID.randomUUID();
+        Function function = Function.builder()
+                .id(id)
+                .storagePath("/path/to/file")
+                .deploymentStatus(DeploymentStatus.NOT_DEPLOYED)
+                .build();
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
+                .thenReturn(Optional.of(function));
+
+        File file = mock(File.class);
+        when(storageService.getFile(eq(function.getStoragePath()))).thenReturn(file);
+        assertThrows(RuntimeException.class,
+                () -> functionService.deployFunction(id));
+    }
+
+    @Test
+    void deployFunction_shouldNotDeployIfFileHashIsSameAsDeploymentHash() {
+        when(currentUserService.getCurrentUser()).thenReturn(mockUser);
+        UUID id = UUID.randomUUID();
+        Function function = Function.builder()
+                .id(id)
+                .storagePath("/path/to/file")
+                .deploymentStatus(DeploymentStatus.NOT_DEPLOYED)
+                .deployedHashcode("hash")
+                .currentHashCode("hash")
+                .build();
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
+                .thenReturn(Optional.of(function));
+
+        File file = mock(File.class);
+        when(storageService.getFile(eq(function.getStoragePath()))).thenReturn(file);
+        assertThrows(RuntimeException.class,
+                () -> functionService.deployFunction(id));
+    }
+
+
+    @Test
+    void deployFunction_shouldNotDeployIfDeploymentStatusIsDEPLOYED() {
+        when(currentUserService.getCurrentUser()).thenReturn(mockUser);
+        UUID id = UUID.randomUUID();
+        Function function = Function.builder()
+                .id(id)
+                .storagePath("/path/to/file")
+                .deploymentStatus(DeploymentStatus.DEPLOYED)
+                .currentHashCode("hash")
+                .build();
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
+                .thenReturn(Optional.of(function));
+
+        File file = mock(File.class);
+        when(storageService.getFile(eq(function.getStoragePath()))).thenReturn(file);
+        assertThrows(RuntimeException.class,
+                () -> functionService.deployFunction(id));
+    }
+
+    @Test
+    void deployFunction_shouldNotDeployIfDeploymentStatusIsDEPLOYING() {
+        when(currentUserService.getCurrentUser()).thenReturn(mockUser);
+        UUID id = UUID.randomUUID();
+        Function function = Function.builder()
+                .id(id)
+                .deploymentStatus(DeploymentStatus.DEPLOYING)
+                .build();
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
+                .thenReturn(Optional.of(function));
+
+        assertThrows(DeploymentServiceException.class,
+                () -> functionService.deployFunction(id));
+    }
+
+    @Test
+    void deployFunction_shouldThrowIfDeploymentServiceFailed() {
+        when(currentUserService.getCurrentUser()).thenReturn(mockUser);
+        UUID id = UUID.randomUUID();
+
+        Function function = Function.builder()
+                .id(id)
+                .storagePath("/path")
+                .currentHashCode("hash")
+                .cpuCores(0.5)
+                .memory(256)
+                .pidCount(64)
+                .deploymentStatus(DeploymentStatus.NOT_DEPLOYED)
+                .build();
+        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
+                .thenReturn(Optional.of(function));
+        when(functionRepository.save(any(Function.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        File file = mock(File.class);
+        when(file.exists()).thenReturn(true);
+
+        when(storageService.getFile(eq(function.getStoragePath()))).thenReturn(file);
+        try {
+            when(deploymentService.deploy(eq(id), eq("hash"), eq(file), eq(0.5),
+                    eq(256), eq(64))).thenThrow(new Exception("UnknownError"));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        DeploymentResponse deploymentResponse = functionService.deployFunction(id);
+
+        assertNotNull(deploymentResponse);
+        assertEquals(DeploymentStatus.FAILED, deploymentResponse.status());
+        assertNull(deploymentResponse.invocationURL());
+        assertNull(function.getDeployedHashcode());
+
     }
 }

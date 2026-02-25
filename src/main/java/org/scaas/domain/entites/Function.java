@@ -38,7 +38,7 @@ public class Function {
     @Enumerated(EnumType.STRING)
     private DeploymentStatus deploymentStatus;
     private String deployedHashcode;
-    private String hashCode;
+    private String currentHashCode;
     @Column(nullable = false)
     private String entryPoint;
     private String storagePath;

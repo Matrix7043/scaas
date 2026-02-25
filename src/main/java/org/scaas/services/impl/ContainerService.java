@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class ContainerService implements DeploymentService {
     @Override
-    public String deploy(UUID id, String hashCode, File file) {
+    public String deploy(UUID id, String hashCode, File file, double cpuCores, int memory, int pids) throws Exception {
         String containerName = "deployment_" + id + "_" + hashCode;
         try {
             TimeUnit.SECONDS.sleep(5);
