@@ -13,6 +13,7 @@ import org.scaas.domain.entites.User;
 import org.scaas.domain.enumerations.DeploymentStatus;
 import org.scaas.domain.enumerations.Runtime;
 import org.scaas.domain.repositories.FunctionRepository;
+import org.scaas.exceptions.DeploymentConflictException;
 import org.scaas.exceptions.DeploymentServiceException;
 import org.scaas.exceptions.ResourceNotFoundException;
 import org.scaas.protocol.mappers.ToDeploymentResponse;
@@ -197,7 +198,7 @@ public class FunctionServiceUnitTest {
         when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(any(UUID.class), eq(mockUser))).thenReturn(Optional.of(function));
 
         UpdateFunctionRequest request = mock(UpdateFunctionRequest.class);
-        assertThrows(DeploymentServiceException.class,
+        assertThrows(DeploymentConflictException.class,
                 () -> functionService.updateFunctionById(UUID.randomUUID(), request));
     }
 
@@ -255,7 +256,7 @@ public class FunctionServiceUnitTest {
 
         when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(functionId), eq(mockUser))).thenReturn(Optional.of(function));
 
-        assertThrows(DeploymentServiceException.class,
+        assertThrows(DeploymentConflictException.class,
                 () -> functionService.deleteFunctionById(functionId));
 
     }
@@ -399,7 +400,7 @@ public class FunctionServiceUnitTest {
         when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
                 .thenReturn(Optional.of(function));
 
-        assertThrows(DeploymentServiceException.class, () -> functionService.replaceArtifact(id, file));
+        assertThrows(DeploymentConflictException.class, () -> functionService.replaceArtifact(id, file));
         verifyNoInteractions(storageService);
     }
 
@@ -463,7 +464,7 @@ public class FunctionServiceUnitTest {
             when(deploymentService.deploy(eq(id), eq("hash"), eq(file), eq(0.5),
                     eq(256), eq(64)))
                     .thenReturn("URL");
-        } catch (Exception e) {
+        } catch (DeploymentServiceException e) {
             throw new RuntimeException(e);
         }
 
@@ -583,12 +584,12 @@ public class FunctionServiceUnitTest {
         when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
                 .thenReturn(Optional.of(function));
 
-        assertThrows(DeploymentServiceException.class,
+        assertThrows(DeploymentConflictException.class,
                 () -> functionService.deployFunction(id));
     }
 
     @Test
-    void deployFunction_shouldThrowIfDeploymentServiceFailed() {
+    void deployFunction_shouldThrowIfDeploymentServiceFailed() throws DeploymentServiceException {
         when(currentUserService.getCurrentUser()).thenReturn(mockUser);
         UUID id = UUID.randomUUID();
 
@@ -610,18 +611,13 @@ public class FunctionServiceUnitTest {
         when(file.exists()).thenReturn(true);
 
         when(storageService.getFile(eq(function.getStoragePath()))).thenReturn(file);
-        try {
-            when(deploymentService.deploy(eq(id), eq("hash"), eq(file), eq(0.5),
-                    eq(256), eq(64))).thenThrow(new Exception("UnknownError"));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        when(deploymentService.deploy(eq(id), eq("hash"), eq(file), eq(0.5),
+                eq(256), eq(64))).thenThrow(new DeploymentServiceException("UnknownError"));
 
-        DeploymentResponse deploymentResponse = functionService.deployFunction(id);
+        assertThrows(RuntimeException.class, () -> functionService.deployFunction(id));
 
-        assertNotNull(deploymentResponse);
-        assertEquals(DeploymentStatus.FAILED, deploymentResponse.status());
-        assertNull(deploymentResponse.invocationURL());
+        assertEquals(DeploymentStatus.FAILED, function.getDeploymentStatus());
+        assertNull(function.getInvocationURL());
         assertNull(function.getDeployedHashcode());
 
     }

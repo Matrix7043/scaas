@@ -98,6 +98,29 @@ class AuthAndFunctionITest {
         return function.id();
     }
 
+    private UUID createDeployedFunction(String token) throws Exception {
+
+        UUID id = createFunction(token, "deploy");
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "original.py",
+                "text/plain",
+                "print('hello world!!')".getBytes()
+        );
+
+        mockMvc.perform(multipart("/functions/{id}/artifacts", id)
+                        .header("Authorization", "Bearer " + token)
+                        .file(file))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/functions/{id}/deploy", id)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        return id;
+    }
+
     @Test
     void fullFlow_register_login_createAndListFunction() throws Exception {
 
@@ -358,6 +381,65 @@ class AuthAndFunctionITest {
         String content = Files.readString(path1);
         assertEquals("print('hello world!!')", content);
     }
+
+    @Test
+    void functionDeploy_shouldNotDeployFunctionIfFileIsNotPresent() throws Exception {
+
+        String token = registerAndLogin("deploy@test.com");
+        UUID id = createFunction(token, "deploy");
+
+        mockMvc.perform(post("/functions/{id}/deploy", id)
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void functionDeploy_shouldDeployFunction() throws Exception {
+
+        String token = registerAndLogin("deploy@test.com");
+        UUID id = createDeployedFunction(token);
+
+        mockMvc.perform(get("/functions/{id}", id)
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deploymentStatus").value("DEPLOYED"))
+                .andExpect(jsonPath("$.invocationURL").isNotEmpty());
+
+    }
+
+    @Test
+    void functionDeploy_shouldNotDeployFunctionIfAlreadyPresent() throws Exception {
+        String token = registerAndLogin("deploy@test.com");
+        UUID id = createDeployedFunction(token);
+
+        mockMvc.perform(post("/functions/{id}/deploy", id)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("No visible changes for redeployment"));
+    }
+
+    @Test
+    void functionDeploy_shouldRedeployIfAlreadyDeployedAndIsNewFile() throws Exception {
+        String token = registerAndLogin("deploy@test.com");
+        UUID id = createDeployedFunction(token);
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "original.py",
+                "text/plain",
+                "print('hello world!!!!')".getBytes()
+        );
+
+        mockMvc.perform(multipart("/functions/{id}/artifacts", id)
+                .header("Authorization", "Bearer " + token)
+                .file(file)).andExpect(status().isOk());
+
+        mockMvc.perform(post("/functions/{id}/deploy", id)
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+    }
+
 
     @Test
     void functions_withoutAuthIsForbidden() throws Exception {

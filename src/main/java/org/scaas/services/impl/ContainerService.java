@@ -1,5 +1,6 @@
 package org.scaas.services.impl;
 
+import org.scaas.exceptions.DeploymentServiceException;
 import org.scaas.services.DeploymentService;
 import org.springframework.stereotype.Service;
 
@@ -10,7 +11,8 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class ContainerService implements DeploymentService {
     @Override
-    public String deploy(UUID id, String hashCode, File file, double cpuCores, int memory, int pids) throws Exception {
+    public String deploy(UUID id, String hashCode, File file, double cpuCores, int memory, int pids)
+            throws DeploymentServiceException {
         String containerName = "deployment_" + id + "_" + hashCode;
         try {
             TimeUnit.SECONDS.sleep(5);

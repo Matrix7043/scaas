@@ -6,6 +6,7 @@ import org.scaas.domain.entites.Function;
 import org.scaas.domain.entites.User;
 import org.scaas.domain.enumerations.DeploymentStatus;
 import org.scaas.domain.repositories.FunctionRepository;
+import org.scaas.exceptions.DeploymentConflictException;
 import org.scaas.exceptions.DeploymentServiceException;
 import org.scaas.exceptions.ResourceNotFoundException;
 import org.scaas.exceptions.StorageException;
@@ -120,7 +121,7 @@ public class FunctionServiceImpl implements FunctionService {
 
     private static @NonNull String getExtension(MultipartFile file, Function function) {
         if(DeploymentStatus.DEPLOYING.equals(function.getDeploymentStatus())){
-            throw new DeploymentServiceException("Artifact cannot be updated when deployment is in progress");
+            throw new DeploymentConflictException("Artifact cannot be updated when deployment is in progress");
         }
 
         if(file == null || file.isEmpty()) {
@@ -145,7 +146,7 @@ public class FunctionServiceImpl implements FunctionService {
         );
 
         if (DeploymentStatus.DEPLOYING.equals(function.getDeploymentStatus())) {
-            throw new DeploymentServiceException("Function cannot be updated when deployment is in progress");
+            throw new DeploymentConflictException("Function cannot be updated when deployment is in progress");
         }
 
         if(request.name() != null && !request.name().isEmpty()) {
@@ -183,7 +184,7 @@ public class FunctionServiceImpl implements FunctionService {
         );
 
         if (DeploymentStatus.DEPLOYING.equals(function.getDeploymentStatus())) {
-            throw new DeploymentServiceException("Function cannot be deleted when deployment is in progress");
+            throw new DeploymentConflictException("Function cannot be deleted when deployment is in progress");
         }
 
         if(function.getCurrentHashCode() != null && function.getStoragePath() != null) {
@@ -215,7 +216,7 @@ public class FunctionServiceImpl implements FunctionService {
         );
 
         if(DeploymentStatus.DEPLOYING.equals(function.getDeploymentStatus())){
-            throw new DeploymentServiceException("Deployment is already in progress");
+            throw new DeploymentConflictException("Deployment is already in progress");
         }
 
         if(function.getStoragePath() == null){
@@ -248,12 +249,12 @@ public class FunctionServiceImpl implements FunctionService {
                         function.getPidCount());
             } else throw new RuntimeException("No visible changes for redeployment");
         } catch (ObjectOptimisticLockingFailureException e){
-            throw new DeploymentServiceException("Deployment is already in progress");
-        } catch (Exception e){
+            throw new DeploymentConflictException("Deployment is already in progress");
+        } catch (DeploymentServiceException e) {
             function.setDeploymentStatus(DeploymentStatus.FAILED);
             function.setUpdatedAt(LocalDateTime.now());
             functionRepository.save(function);
-            return dMapper.toDeploymentResponse(function);
+            throw new RuntimeException("Deployment failed");
         }
 
         LocalDateTime time =  LocalDateTime.now();
