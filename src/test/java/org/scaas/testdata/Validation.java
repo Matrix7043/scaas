@@ -127,15 +127,6 @@ public class Validation {
                 Arguments.of("""
                     {
                         "name": "valid",
-                        "runtime": "PYTHON",
-                        "entryPoint": ""
-                    }
-                    """
-                ),
-
-                Arguments.of("""
-                    {
-                        "name": "valid",
                         "runtime": "INVALID_RUNTIME",
                         "entryPoint": "handler"
                     }
@@ -160,10 +151,21 @@ public class Validation {
                     }
                     """.formatted("a".repeat(101))
                 ),
-
                 Arguments.of("""
                     {
-                        "runtime": "INVALID_RUNTIME"
+                        "cpuCores": "0.0"
+                    }
+                    """
+                ),
+                Arguments.of("""
+                    {
+                        "mem": "0"
+                    }
+                    """
+                ),
+                Arguments.of("""
+                    {
+                        "pids": "0"
                     }
                     """
                 )

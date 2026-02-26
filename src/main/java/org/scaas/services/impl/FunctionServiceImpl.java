@@ -93,7 +93,7 @@ public class FunctionServiceImpl implements FunctionService {
 
         String newHash = hashingUtil.hashFile(file);
         if(function.getCurrentHashCode() != null && Objects.equals(newHash, function.getCurrentHashCode())) {
-            throw new RuntimeException("File already present");
+            throw new RuntimeException("No changes detected");
         }
         if(DeploymentStatus.DEPLOYED.equals(function.getDeploymentStatus())
         || DeploymentStatus.NOT_DEPLOYED.equals(function.getDeploymentStatus())

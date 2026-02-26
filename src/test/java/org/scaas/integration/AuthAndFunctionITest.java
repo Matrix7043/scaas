@@ -84,8 +84,7 @@ class AuthAndFunctionITest {
                         .content("""
                         {
                             "name": "%s",
-                            "runtime": "PYTHON",
-                            "entryPoint": "handler"
+                            "runtime": "PYTHON"
                         }
                         """.formatted(name)))
                 .andExpect(status().isCreated())
@@ -281,6 +280,40 @@ class AuthAndFunctionITest {
 
         String path = function.getStoragePath();
         assertTrue(Files.exists(Paths.get(path)));
+    }
+
+    @Test
+    void uploadArtifact_doesNotUploadIfFileIsTheSame() throws Exception {
+
+        String token = registerAndLogin("artifact@test.com");
+
+        UUID id = createFunction(token, "artifact");
+
+        MockMultipartFile file = new MockMultipartFile("file",
+                "artifact.py",
+                "text/plain",
+                "print('hello world')".getBytes());
+
+        MockMultipartFile fileDuplicate = new MockMultipartFile("file",
+                "artifact.py",
+                "text/plain",
+                "print('hello world')".getBytes());
+
+        mockMvc.perform(multipart("/functions/{id}/artifacts", id)
+                        .header("Authorization", "Bearer " + token)
+                        .file(file))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/functions/" + id)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("artifact"))
+                .andExpect(jsonPath("$.hasArtifact").value(true));
+
+        mockMvc.perform(multipart("/functions/{id}/artifacts", id)
+                .header("Authorization", "Bearer " + token)
+                .file(fileDuplicate))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
