@@ -414,8 +414,8 @@ class AuthAndFunctionITest {
 
         mockMvc.perform(post("/functions/{id}/deploy", id)
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("No visible changes for redeployment"));
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("No visible changes found for redeployment"));
     }
 
     @Test

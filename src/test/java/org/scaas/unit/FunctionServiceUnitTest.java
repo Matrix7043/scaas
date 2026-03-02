@@ -25,6 +25,7 @@ import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.security.CurrentUserService;
 import org.scaas.services.DeploymentService;
 import org.scaas.services.StorageService;
+import org.scaas.services.impl.DeploymentStateService;
 import org.scaas.services.impl.FunctionServiceImpl;
 import org.scaas.utils.HashingUtil;
 import org.springframework.data.domain.Page;
@@ -68,6 +69,9 @@ public class FunctionServiceUnitTest {
 
     private FunctionServiceImpl functionService;
 
+    @Mock
+    private DeploymentStateService deploymentStateService;
+
     private User mockUser;
 
     @BeforeEach
@@ -80,6 +84,7 @@ public class FunctionServiceUnitTest {
                 functionRepository,
                 storageService,
                 deploymentService,
+                deploymentStateService,
                 hashingUtil,
                 mapper,
                 dMapper);
@@ -453,8 +458,6 @@ public class FunctionServiceUnitTest {
                 .build();
         when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
                 .thenReturn(Optional.of(function));
-        when(functionRepository.save(any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         File file = mock(File.class);
         when(file.exists()).thenReturn(true);
@@ -467,6 +470,21 @@ public class FunctionServiceUnitTest {
         } catch (DeploymentServiceException e) {
             throw new RuntimeException(e);
         }
+
+        when(deploymentStateService.markDeployed(eq(function), eq("URL")))
+                .thenAnswer(invocation -> {
+                    Function f = invocation.getArgument(0);
+                    f.setDeploymentStatus(DeploymentStatus.DEPLOYED);
+                    f.setInvocationURL(invocation.getArgument(1));
+                    return f;
+                });
+        when(deploymentStateService.markDeploying(eq(function)))
+                .thenAnswer(invocation -> {
+                    Function f = invocation.getArgument(0);
+                    f.setDeploymentStatus(DeploymentStatus.DEPLOYING);
+                    f.setDeployedHashcode(f.getCurrentHashCode());
+                    return f;
+                });
 
         DeploymentResponse deploymentResponse = functionService.deployFunction(id);
 
@@ -511,7 +529,7 @@ public class FunctionServiceUnitTest {
         when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
                 .thenReturn(Optional.of(function));
         when(storageService.getFile(eq(function.getStoragePath()))).thenReturn(null);
-        assertThrows(RuntimeException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> functionService.deployFunction(id));
     }
 
@@ -529,7 +547,9 @@ public class FunctionServiceUnitTest {
 
         File file = mock(File.class);
         when(storageService.getFile(eq(function.getStoragePath()))).thenReturn(file);
-        assertThrows(RuntimeException.class,
+        when(file.exists()).thenReturn(true);
+
+        assertThrows(ResourceNotFoundException.class,
                 () -> functionService.deployFunction(id));
     }
 
@@ -540,7 +560,7 @@ public class FunctionServiceUnitTest {
         Function function = Function.builder()
                 .id(id)
                 .storagePath("/path/to/file")
-                .deploymentStatus(DeploymentStatus.NOT_DEPLOYED)
+                .deploymentStatus(DeploymentStatus.DEPLOYED)
                 .deployedHashcode("hash")
                 .currentHashCode("hash")
                 .build();
@@ -549,27 +569,8 @@ public class FunctionServiceUnitTest {
 
         File file = mock(File.class);
         when(storageService.getFile(eq(function.getStoragePath()))).thenReturn(file);
-        assertThrows(RuntimeException.class,
-                () -> functionService.deployFunction(id));
-    }
-
-
-    @Test
-    void deployFunction_shouldNotDeployIfDeploymentStatusIsDEPLOYED() {
-        when(currentUserService.getCurrentUser()).thenReturn(mockUser);
-        UUID id = UUID.randomUUID();
-        Function function = Function.builder()
-                .id(id)
-                .storagePath("/path/to/file")
-                .deploymentStatus(DeploymentStatus.DEPLOYED)
-                .currentHashCode("hash")
-                .build();
-        when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
-                .thenReturn(Optional.of(function));
-
-        File file = mock(File.class);
-        when(storageService.getFile(eq(function.getStoragePath()))).thenReturn(file);
-        assertThrows(RuntimeException.class,
+        when(file.exists()).thenReturn(true);
+        assertThrows(DeploymentConflictException.class,
                 () -> functionService.deployFunction(id));
     }
 
@@ -604,18 +605,30 @@ public class FunctionServiceUnitTest {
                 .build();
         when(functionRepository.findByIdAndOwnerAndDeletedAtIsNull(eq(id), eq(mockUser)))
                 .thenReturn(Optional.of(function));
-        when(functionRepository.save(any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(deploymentStateService.markDeploying(eq(function)))
+                .thenAnswer(invocation -> {
+                    Function f = invocation.getArgument(0);
+                    f.setDeploymentStatus(DeploymentStatus.DEPLOYING);
+                    return f;
+                });
+
+        doAnswer(invocation -> {
+            Function f = invocation.getArgument(0);
+            f.setDeploymentStatus(DeploymentStatus.FAILED);
+            return null;
+        }).when(deploymentStateService).markFailed(eq(function));
 
         File file = mock(File.class);
         when(file.exists()).thenReturn(true);
 
         when(storageService.getFile(eq(function.getStoragePath()))).thenReturn(file);
         when(deploymentService.deploy(eq(id), eq("hash"), eq(file), eq(0.5),
-                eq(256), eq(64))).thenThrow(new DeploymentServiceException("UnknownError"));
+                eq(256), eq(64))).thenThrow(new DeploymentServiceException("Deployment Failed"));
 
         assertThrows(RuntimeException.class, () -> functionService.deployFunction(id));
 
+        verify(deploymentStateService, times(1)).markFailed(any());
         assertEquals(DeploymentStatus.FAILED, function.getDeploymentStatus());
         assertNull(function.getInvocationURL());
         assertNull(function.getDeployedHashcode());

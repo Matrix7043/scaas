@@ -42,6 +42,7 @@ public class FunctionServiceImpl implements FunctionService {
     private final FunctionRepository functionRepository;
     private final StorageService storageService;
     private final DeploymentService deploymentService;
+    private final DeploymentStateService deploymentStateService;
     private final HashingUtil hashingUtil;
     private final ToFunctionResponse mapper;
     private final ToDeploymentResponse dMapper;
@@ -138,6 +139,7 @@ public class FunctionServiceImpl implements FunctionService {
     }
 
     @Override
+    @Transactional
     public FunctionResponse updateFunctionById(UUID id, UpdateFunctionRequest request) {
 
         User owner = currentUserService.getCurrentUser();
@@ -211,59 +213,56 @@ public class FunctionServiceImpl implements FunctionService {
     public DeploymentResponse deployFunction(UUID id) {
 
         User owner = currentUserService.getCurrentUser();
-        Function function = functionRepository.findByIdAndOwnerAndDeletedAtIsNull(id, owner).orElseThrow(
-                () -> new ResourceNotFoundException("Function not found")
-        );
 
-        if(DeploymentStatus.DEPLOYING.equals(function.getDeploymentStatus())){
+        Function function = functionRepository
+                .findByIdAndOwnerAndDeletedAtIsNull(id, owner)
+                .orElseThrow(() -> new ResourceNotFoundException("Function not found"));
+
+        if (DeploymentStatus.DEPLOYING.equals(function.getDeploymentStatus())) {
             throw new DeploymentConflictException("Deployment is already in progress");
         }
 
-        if(function.getStoragePath() == null){
-            throw new ResourceNotFoundException("Artifact cannot be found, please upload or save");
+        if (function.getStoragePath() == null) {
+            throw new ResourceNotFoundException("Artifact cannot be found");
         }
 
         File file = storageService.getFile(function.getStoragePath());
 
-        if(file == null || !file.exists()) {
-            throw new RuntimeException("File does not exist");
+        if (file == null || !file.exists()) {
+            throw new ResourceNotFoundException("File does not exist");
         }
 
-        if(function.getCurrentHashCode() == null){
-            throw new RuntimeException("Hash code not found");
+        if (function.getCurrentHashCode() == null) {
+            throw new ResourceNotFoundException("HashCode cannot be found");
         }
 
         boolean deployed = DeploymentStatus.DEPLOYED.equals(function.getDeploymentStatus());
-        boolean hashChange = !Objects.equals(function.getCurrentHashCode(), function.getDeployedHashcode());
+        boolean hashChange = Objects.equals(function.getCurrentHashCode(), function.getDeployedHashcode());
+
+        if(hashChange && deployed) {
+            throw new DeploymentConflictException("No visible changes found for redeployment");
+        }
+
+        function = deploymentStateService.markDeploying(function);
+
         String url;
 
         try {
-            if (!deployed || hashChange) {
-                function.setDeploymentStatus(DeploymentStatus.DEPLOYING);
-                functionRepository.save(function);
-                url = deploymentService.deploy(id,
-                        function.getCurrentHashCode(),
-                        file,
-                        function.getCpuCores(),
-                        function.getMemory(),
-                        function.getPidCount());
-            } else throw new RuntimeException("No visible changes for redeployment");
-        } catch (ObjectOptimisticLockingFailureException e){
-            throw new DeploymentConflictException("Deployment is already in progress");
+            url = deploymentService.deploy(
+                    id,
+                    function.getCurrentHashCode(),
+                    file,
+                    function.getCpuCores(),
+                    function.getMemory(),
+                    function.getPidCount()
+            );
         } catch (DeploymentServiceException e) {
-            function.setDeploymentStatus(DeploymentStatus.FAILED);
-            function.setUpdatedAt(LocalDateTime.now());
-            functionRepository.save(function);
-            throw new RuntimeException("Deployment failed");
+            deploymentStateService.markFailed(function);
+            throw new RuntimeException("Deployment Failed");
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new DeploymentConflictException("Deployment is already in progress");
         }
-
-        LocalDateTime time =  LocalDateTime.now();
-        function.setUpdatedAt(time);
-        function.setDeployedHashcode(function.getCurrentHashCode());
-        function.setDeploymentStatus(DeploymentStatus.DEPLOYED);
-        function.setDeployedAt(time);
-        function.setInvocationURL(url);
-        Function updated = functionRepository.save(function);
+        Function updated = deploymentStateService.markDeployed(function, url);
 
         return dMapper.toDeploymentResponse(updated);
     }
