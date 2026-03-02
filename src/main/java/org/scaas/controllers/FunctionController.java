@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.scaas.protocol.requests.CreateFunctionRequest;
 import org.scaas.protocol.requests.UpdateFunctionRequest;
+import org.scaas.protocol.responses.DeploymentResponse;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.services.FunctionService;
 import org.springframework.data.domain.Page;
@@ -55,6 +56,12 @@ public class FunctionController {
     @GetMapping("/{id}")
     public ResponseEntity<FunctionResponse> getById(@PathVariable UUID id) {
         FunctionResponse response = functionService.getFunctionById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PostMapping("/{id}/deploy")
+    public ResponseEntity<DeploymentResponse> deploy(@PathVariable UUID id) {
+        DeploymentResponse response = functionService.deployFunction(id);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }

@@ -2,6 +2,7 @@ package org.scaas.services;
 
 import org.scaas.protocol.requests.CreateFunctionRequest;
 import org.scaas.protocol.requests.UpdateFunctionRequest;
+import org.scaas.protocol.responses.DeploymentResponse;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,4 +17,5 @@ public interface FunctionService {
     Page<FunctionResponse> getFunctions(Pageable pageable);
     void replaceArtifact(UUID id, MultipartFile file);
     FunctionResponse getFunctionById(UUID id);
+    DeploymentResponse deployFunction(UUID id);
 }
