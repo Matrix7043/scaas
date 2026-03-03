@@ -14,9 +14,15 @@ public class ToFunctionResponse {
                 .name(function.getName())
                 .runtime(function.getRuntime())
                 .entryPoint(function.getEntryPoint())
+                .memory(function.getMemory())
+                .cpuCores(function.getCpuCores())
+                .pid(function.getPidCount())
+                .invocationURL(function.getInvocationURL())
                 .createdAt(function.getCreatedAt())
                 .updatedAt(function.getUpdatedAt())
                 .hasArtifact(function.getStoragePath() != null)
+                .deploymentStatus(function.getDeploymentStatus())
+                .deployedAt(function.getDeployedAt())
                 .build();
     }
 

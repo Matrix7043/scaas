@@ -1,10 +1,29 @@
 package org.scaas.testdata;
 
 import org.junit.jupiter.params.provider.Arguments;
+import org.scaas.domain.enumerations.DeploymentStatus;
 
 import java.util.stream.Stream;
 
 public class Validation {
+
+    private static Stream<Arguments> deploymentStatusForUpdate() {
+        return Stream.of(
+                Arguments.of(DeploymentStatus.DEPLOYED, DeploymentStatus.OUTDATED),
+                Arguments.of(DeploymentStatus.OUTDATED, DeploymentStatus.OUTDATED),
+                Arguments.of(DeploymentStatus.FAILED, DeploymentStatus.OUTDATED),
+                Arguments.of(DeploymentStatus.NOT_DEPLOYED, DeploymentStatus.NOT_DEPLOYED)
+        );
+    }
+
+    private static Stream<Arguments> deploymentStatusForReplaceArtifact() {
+        return Stream.of(
+                Arguments.of(DeploymentStatus.DEPLOYED, DeploymentStatus.OUTDATED),
+                Arguments.of(DeploymentStatus.OUTDATED, DeploymentStatus.OUTDATED),
+                Arguments.of(DeploymentStatus.FAILED, DeploymentStatus.OUTDATED),
+                Arguments.of(DeploymentStatus.NOT_DEPLOYED, DeploymentStatus.OUTDATED)
+        );
+    }
 
     private static Stream<Arguments> invalidRegisterRequests() {
         return Stream.of(
@@ -108,15 +127,6 @@ public class Validation {
                 Arguments.of("""
                     {
                         "name": "valid",
-                        "runtime": "PYTHON",
-                        "entryPoint": ""
-                    }
-                    """
-                ),
-
-                Arguments.of("""
-                    {
-                        "name": "valid",
                         "runtime": "INVALID_RUNTIME",
                         "entryPoint": "handler"
                     }
@@ -141,10 +151,21 @@ public class Validation {
                     }
                     """.formatted("a".repeat(101))
                 ),
-
                 Arguments.of("""
                     {
-                        "runtime": "INVALID_RUNTIME"
+                        "cpuCores": "0.0"
+                    }
+                    """
+                ),
+                Arguments.of("""
+                    {
+                        "mem": "0"
+                    }
+                    """
+                ),
+                Arguments.of("""
+                    {
+                        "pids": "0"
                     }
                     """
                 )
