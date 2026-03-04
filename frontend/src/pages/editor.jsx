@@ -183,6 +183,12 @@ function Editor({ fn, mode = "view", onBack }) {
 
   return (
     <div style={S.app}>
+      {/* Ambient background */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: "-20%", left: "-10%", width: "600px", height: "600px", borderRadius: "50%", background: "radial-gradient(circle, rgba(46,160,67,0.06) 0%, transparent 70%)", filter: "blur(40px)" }} />
+        <div style={{ position: "absolute", bottom: "-15%", right: "-10%", width: "700px", height: "700px", borderRadius: "50%", background: "radial-gradient(circle, rgba(20,120,120,0.05) 0%, transparent 70%)", filter: "blur(50px)" }} />
+        <div style={{ position: "absolute", top: "15%", right: "5%", width: "350px", height: "350px", borderRadius: "50%", background: "radial-gradient(circle, rgba(180,100,20,0.03) 0%, transparent 70%)", filter: "blur(40px)" }} />
+      </div>
 
       {/* ── TOP BAR — matches FunctionsPage exactly ── */}
       <div style={S.topBar}>
@@ -458,9 +464,12 @@ const S = {
     alignItems: "center",
     gap: "10px",
     padding: "0 22px",
-    backgroundColor: "#0f0f0f",
+    backgroundColor: "rgba(15,15,15,0.88)",
+    backdropFilter: "blur(12px)",
     borderBottom: "1px solid #1a1a1a",
     flexShrink: 0,
+    zIndex: 10,
+    position: "relative",
     boxShadow: "0 1px 0 #1a1a1a, 0 4px 24px rgba(0,0,0,0.5)",
   },
 
@@ -485,8 +494,8 @@ const S = {
     gap: "5px",
     padding: "5px 10px",
     borderRadius: "6px",
-    border: "1px solid #1a1a1a",
-    color: "#444",
+    border: "1px solid #1e1e1e",
+    color: "#666",
     backgroundColor: "transparent",
     cursor: "pointer",
     fontSize: "11px",
@@ -600,14 +609,14 @@ const S = {
 
   metaItem: {
     fontSize: "10px",
-    color: "#2a2a2a",
+    color: "#484848",
     letterSpacing: "0.06em",
     textTransform: "lowercase",
   },
 
   metaSep: {
     fontSize: "10px",
-    color: "#1e1e1e",
+    color: "#333",
   },
 
   // Editor
@@ -649,14 +658,14 @@ const S = {
 
   termTitle: {
     fontSize: "10px",
-    color: "#252525",
+    color: "#484848",
     letterSpacing: "0.08em",
     textTransform: "uppercase",
   },
 
   termFile: {
     fontSize: "10px",
-    color: "#1e1e1e",
+    color: "#383838",
     letterSpacing: "0.04em",
   },
 
@@ -665,7 +674,7 @@ const S = {
     alignItems: "center",
     background: "transparent",
     border: "none",
-    color: "#252525",
+    color: "#444",
     cursor: "pointer",
     padding: "3px 4px",
     borderRadius: "3px",
@@ -689,7 +698,7 @@ const S = {
 
   termEmpty: {
     fontSize: "12px",
-    color: "#1e1e1e",
+    color: "#3a3a3a",
     letterSpacing: "0.04em",
   },
 

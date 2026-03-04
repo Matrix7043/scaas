@@ -75,7 +75,7 @@ function LoginPage({ onSuccess }) {
                 <div style={styles.topBarRight}>
                     <span style={styles.topBarDot} />
                     <span style={styles.topBarStatus}>
-                        {isLoading ? "Processing..." : isSuccess ? "Authenticated" : "Secure Login"}
+                        {isLoading ? "Processing..." : isSuccess ? "Authenticated" : "Login"}
                     </span>
                 </div>
             </div>
