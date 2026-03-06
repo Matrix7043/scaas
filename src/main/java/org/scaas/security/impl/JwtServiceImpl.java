@@ -1,6 +1,7 @@
 package org.scaas.security.impl;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -47,7 +48,11 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        String email = extractEmail(token);
-        return email.equals(userDetails.getUsername());
+        try {
+            String email = extractEmail(token);
+            return email.equals(userDetails.getUsername());
+        } catch (JwtException e) {
+            return false;
+        }
     }
 }

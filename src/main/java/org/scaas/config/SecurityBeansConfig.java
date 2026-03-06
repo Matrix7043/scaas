@@ -19,7 +19,7 @@ public class SecurityBeansConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
 
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
@@ -32,6 +32,7 @@ public class SecurityBeansConfig {
                         auth.requestMatchers("/auth/**").permitAll()
                                 .anyRequest().authenticated()
                 )
+                .cors(cors -> {})
                 .addFilterBefore(jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class);
 
