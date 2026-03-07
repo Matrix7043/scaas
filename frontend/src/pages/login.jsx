@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { LogIn, UserPlus, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { login as apiLogin, register as apiRegister } from "../api";
 
 // Router integration note:
 // Replace the onSuccess prop callback with useNavigate() from react-router-dom
@@ -28,19 +29,25 @@ function LoginPage({ onSuccess }) {
     const [mode, setMode] = useState("login");
     const [status, setStatus] = useState("idle"); // idle | loading | success | error
     const [error, setError] = useState("");
-    const [form, setForm] = useState({ fullName: "", username: "", password: "", confirmPassword: "" });
+    // Login needs: email, password
+    // Register needs: firstName, lastName, username, email, password, confirmPassword
+    const [form, setForm] = useState({
+        firstName: "", lastName: "", username: "",
+        email: "", password: "", confirmPassword: "",
+    });
 
     const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         setError("");
 
-        if (!form.username || !form.password) {
+        // Basic client-side validation
+        if (!form.email || !form.password) {
             setError("Please complete all required fields.");
             return;
         }
         if (mode === "register") {
-            if (!form.fullName || !form.confirmPassword) {
+            if (!form.firstName || !form.lastName || !form.username || !form.confirmPassword) {
                 setError("Please complete all required fields.");
                 return;
             }
@@ -48,20 +55,55 @@ function LoginPage({ onSuccess }) {
                 setError("Passwords do not match.");
                 return;
             }
+            if (form.password.length < 6 || form.password.length > 12) {
+                setError("Password must be 6–12 characters.");
+                return;
+            }
         }
 
         setStatus("loading");
-        setTimeout(() => {
-            setStatus("success");
-            setTimeout(() => onSuccess?.(), 600);
-        }, 900);
+        try {
+            if (mode === "login") {
+                // POST /auth/login → returns JWT string, saved to localStorage by api.js
+                const token = await apiLogin({ email: form.email, password: form.password });
+                // Decode the username from the JWT payload (middle part, base64)
+                let userName = form.email;
+                try {
+                    const payload = JSON.parse(atob(token.split(".")[1]));
+                    userName = payload.sub || payload.username || form.email;
+                } catch { /* if decode fails, fall back to email */ }
+                setStatus("success");
+                setTimeout(() => onSuccess?.(token, { name: userName, email: form.email }), 600);
+            } else {
+                // POST /auth/register
+                await apiRegister({
+                    firstName: form.firstName,
+                    lastName: form.lastName,
+                    username: form.username,
+                    email: form.email,
+                    password: form.password,
+                });
+                // On success, auto-login the user
+                const token = await apiLogin({ email: form.email, password: form.password });
+                let userName = form.username;
+                try {
+                    const payload = JSON.parse(atob(token.split(".")[1]));
+                    userName = payload.sub || payload.username || form.username;
+                } catch { /* fall back */ }
+                setStatus("success");
+                setTimeout(() => onSuccess?.(token, { name: userName, email: form.email }), 600);
+            }
+        } catch (err) {
+            setStatus("idle");
+            setError(err.message || "Something went wrong. Try again.");
+        }
     };
 
     const switchMode = () => {
         setMode((m) => (m === "login" ? "register" : "login"));
         setError("");
         setStatus("idle");
-        setForm({ fullName: "", username: "", password: "", confirmPassword: "" });
+        setForm({ firstName: "", lastName: "", username: "", email: "", password: "", confirmPassword: "" });
     };
 
     const isLoading = status === "loading";
@@ -128,28 +170,46 @@ function LoginPage({ onSuccess }) {
 
                         {/* FORM */}
                         <div style={styles.form}>
+                            {/* Register-only fields: first name, last name, username */}
                             <AnimatePresence>
                                 {mode === "register" && (
                                     <motion.div
+                                        style={{ display: "flex", flexDirection: "column", gap: "11px" }}
                                         initial={{ opacity: 0, height: 0 }}
                                         animate={{ opacity: 1, height: "auto" }}
                                         exit={{ opacity: 0, height: 0 }}
                                         transition={{ duration: 0.2 }}
                                     >
+                                        <div style={{ display: "flex", gap: "10px" }}>
+                                            <FocusInput
+                                                placeholder="First Name"
+                                                value={form.firstName}
+                                                onChange={set("firstName")}
+                                                style={{ ...styles.input, flex: 1 }}
+                                            />
+                                            <FocusInput
+                                                placeholder="Last Name"
+                                                value={form.lastName}
+                                                onChange={set("lastName")}
+                                                style={{ ...styles.input, flex: 1 }}
+                                            />
+                                        </div>
                                         <FocusInput
-                                            placeholder="Full Name"
-                                            value={form.fullName}
-                                            onChange={set("fullName")}
+                                            placeholder="Username"
+                                            value={form.username}
+                                            onChange={set("username")}
                                             style={styles.input}
                                         />
                                     </motion.div>
                                 )}
                             </AnimatePresence>
 
+                            {/* Email — used for both login and register */}
                             <FocusInput
-                                placeholder="Username"
-                                value={form.username}
-                                onChange={set("username")}
+                                type="email"
+                                placeholder="Email"
+                                value={form.email}
+                                onChange={set("email")}
                                 style={styles.input}
                             />
                             <FocusInput
@@ -160,6 +220,7 @@ function LoginPage({ onSuccess }) {
                                 style={styles.input}
                             />
 
+                            {/* Confirm password — register only */}
                             <AnimatePresence>
                                 {mode === "register" && (
                                     <motion.div
