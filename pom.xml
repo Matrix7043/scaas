@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>org.scaas</groupId>
 	<artifactId>scaas</artifactId>
-	<version>v0.5.0</version>
+	<version>v0.5.1</version>
 	<name>scaas</name>
 	<description>Serverless compute as a Service Platform</description>
 	<url/>
