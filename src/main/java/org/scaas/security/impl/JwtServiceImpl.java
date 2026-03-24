@@ -21,6 +21,9 @@ public class JwtServiceImpl implements JwtService {
     @Value("${jwt.secret}")
     private String SECRET;
 
+    @Value("${jwt.access-token-expiration}")
+    private long ACCESS_TOKEN_EXPIRATION;
+
     @Override
     public Key getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes());
@@ -31,7 +34,7 @@ public class JwtServiceImpl implements JwtService {
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000*60*60))
+                .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
