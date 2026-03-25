@@ -10,7 +10,10 @@ import org.scaas.security.JwtService;
 import org.scaas.security.RefreshTokenService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 
 @RestController
 @RequestMapping("/auth")
@@ -42,7 +45,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    //TODO: Add Logout Method and Add Index to RefreshToken
+    //TODO: Add Logout Method and Add Index to RefreshToken and Refactor refreshToken code to low coupling
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@RequestBody String refreshToken) {
@@ -53,8 +56,9 @@ public class AuthController {
                     String accessToken = jwtService.generateToken(token.getUser().getEmail());
                     return ResponseEntity.ok(AuthResponse.builder()
                             .accessToken(accessToken)
-                            .refreshToken(refreshToken));
+                            .refreshToken(refreshToken)
+                            .build());
                 })
-                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+                .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
     }
 }

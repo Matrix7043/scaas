@@ -1,13 +1,11 @@
 package org.scaas.security.impl;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.scaas.security.JwtService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -41,21 +39,21 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public String extractEmail(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token).getBody();
-
-        return claims.getSubject();
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token).getBody();
+            return claims.getSubject();
+        } catch (ExpiredJwtException e) {
+            return null;
+        }
     }
 
     @Override
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        try {
             String email = extractEmail(token);
+            if(email == null){ return false; }
             return email.equals(userDetails.getUsername());
-        } catch (JwtException e) {
-            return false;
-        }
     }
 }
