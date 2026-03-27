@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.scaas.domain.entites.RefreshToken;
 import org.scaas.domain.repositories.RefreshTokenRepository;
 import org.scaas.domain.repositories.UserRepository;
+import org.scaas.security.JwtService;
 import org.scaas.security.RefreshTokenService;
 
 import java.time.Instant;
@@ -25,9 +26,12 @@ public class RefreshTokenServiceUnitTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private JwtService jwtService;
+
     @BeforeEach
     void setup(){
-        refreshTokenService = new RefreshTokenService(refreshTokenRepository, userRepository);
+        refreshTokenService = new RefreshTokenService(refreshTokenRepository, userRepository, jwtService);
     }
 
     @Test
