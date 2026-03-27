@@ -11,6 +11,11 @@ import java.util.UUID;
 
 
 @Entity
+@Table(
+        indexes = {
+                @Index(name = "idx_refresh_token_user", columnList = "user_id")
+        }
+)
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
