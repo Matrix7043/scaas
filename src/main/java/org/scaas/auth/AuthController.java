@@ -4,12 +4,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.scaas.domain.entites.RefreshToken;
 import org.scaas.protocol.requests.LoginRequest;
+import org.scaas.protocol.requests.LogoutRequest;
+import org.scaas.protocol.requests.RefreshTokenRequest;
 import org.scaas.protocol.requests.RegisterRequest;
 import org.scaas.protocol.responses.AuthResponse;
-import org.scaas.security.JwtService;
 import org.scaas.security.RefreshTokenService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -41,11 +43,22 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    //TODO: Add Logout Method and Add Index to RefreshToken
+    //TODO: Add Index to RefreshToken
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refreshToken(@RequestBody String refreshToken) {
+    public ResponseEntity<AuthResponse> refreshToken(@RequestBody RefreshTokenRequest refreshTokenRequest) {
+        return ResponseEntity.ok(refreshTokenService.handleRefreshToken(refreshTokenRequest.refreshToken()));
+    }
 
-        return ResponseEntity.ok(refreshTokenService.handleRefreshToken(refreshToken));
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@RequestBody LogoutRequest logoutRequest) {
+        authService.logout(logoutRequest.refreshToken());
+        return ResponseEntity.ok("Logout successfully");
+    }
+
+    @PostMapping("/logout-all")
+    public ResponseEntity<String> logoutAll(Authentication authentication) {
+        authService.logoutAll(authentication.getName());
+        return ResponseEntity.ok("Logged out all devices successfully");
     }
 }

@@ -86,7 +86,11 @@ public class RefreshTokenITest {
 
         String refreshResponse = mockMvc.perform(post("/auth/refresh")
                 .contentType(String.valueOf(MediaType.APPLICATION_JSON))
-                .content(refreshToken))
+                .content("""
+                        {
+                            "refreshToken": "%s"
+                        }
+                        """.formatted(refreshToken)))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()

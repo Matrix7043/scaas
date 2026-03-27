@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.scaas.auth.AuthService;
 import org.scaas.domain.entites.User;
 import org.scaas.domain.enumerations.Role;
+import org.scaas.domain.repositories.RefreshTokenRepository;
 import org.scaas.domain.repositories.UserRepository;
 import org.scaas.protocol.requests.LoginRequest;
 import org.scaas.protocol.requests.RegisterRequest;
@@ -18,6 +19,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService jwtService;
 
     @Override
@@ -54,5 +56,15 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return jwtService.generateToken(user.getEmail());
+    }
+
+    @Override
+    public void logout(String token) {
+        refreshTokenRepository.findByToken(token).ifPresent(refreshTokenRepository::delete);
+    }
+
+    @Override
+    public void logoutAll(String email) {
+        userRepository.findByEmail(email).ifPresent(refreshTokenRepository::deleteByUser);
     }
 }

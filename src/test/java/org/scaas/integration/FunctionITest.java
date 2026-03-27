@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
-class AuthAndFunctionITest {
+class FunctionITest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -43,7 +43,7 @@ class AuthAndFunctionITest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    AuthAndFunctionITest() {
+    FunctionITest() {
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
     }
