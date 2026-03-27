@@ -43,7 +43,6 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    //TODO: Add Index to RefreshToken
 
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refreshToken(@RequestBody RefreshTokenRequest refreshTokenRequest) {
