@@ -6,4 +6,6 @@ import org.scaas.protocol.requests.RegisterRequest;
 public interface AuthService {
     void register(RegisterRequest request);
     String login(LoginRequest request);
+    void logout(String token);
+    void logoutAll(String email);
 }

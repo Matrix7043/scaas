@@ -9,6 +9,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.scaas.domain.entites.Function;
 import org.scaas.domain.repositories.FunctionRepository;
+import org.scaas.protocol.responses.AuthResponse;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
-class AuthAndFunctionITest {
+class FunctionITest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -42,7 +43,7 @@ class AuthAndFunctionITest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    AuthAndFunctionITest() {
+    FunctionITest() {
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
     }
@@ -62,7 +63,7 @@ class AuthAndFunctionITest {
                         """.formatted(email, email)))
                 .andExpect(status().isCreated());
 
-        return mockMvc.perform(post("/auth/login")
+        String response = mockMvc.perform(post("/auth/login")
                         .contentType(String.valueOf(MediaType.APPLICATION_JSON))
                         .content("""
                         {
@@ -74,6 +75,14 @@ class AuthAndFunctionITest {
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
+
+        AuthResponse authResponse = objectMapper.readValue(response, AuthResponse.class);
+
+        assertNotNull(authResponse);
+        assertNotNull(authResponse.accessToken());
+        assertNotNull(authResponse.refreshToken());
+
+        return authResponse.accessToken();
     }
 
     private UUID createFunction(String token, String name) throws Exception {
