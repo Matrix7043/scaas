@@ -9,7 +9,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "functions")
+@Table(name = "functions",
+        indexes = {
+        @Index(name = "idx_function_owner_id", columnList = "owner_id")
+        })
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter

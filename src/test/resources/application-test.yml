@@ -19,6 +19,11 @@ spring:
     console:
       enabled: false
 
+jwt:
+  access-token-expiration: 3600000
+  refresh-token-expiration: 604800000
+  secret: your-256-bit-secret-key-here-make-it-at-least-32-bytes-long
+
 app:
   storage:
     base-path: storage-test

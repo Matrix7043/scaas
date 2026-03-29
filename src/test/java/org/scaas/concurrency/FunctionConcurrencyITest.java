@@ -10,6 +10,7 @@ import org.scaas.protocol.requests.CreateFunctionRequest;
 import org.scaas.protocol.requests.LoginRequest;
 import org.scaas.protocol.requests.RegisterRequest;
 import org.scaas.protocol.requests.UpdateFunctionRequest;
+import org.scaas.protocol.responses.AuthResponse;
 import org.scaas.protocol.responses.FunctionResponse;
 import org.scaas.testdata.Action;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,14 +97,19 @@ class FunctionConcurrencyITest {
                 .retrieve()
                 .toBodilessEntity();
 
-        token = restClient.post()
+        AuthResponse authResponse = restClient.post()
                 .uri("/auth/login")
                 .body(LoginRequest.builder()
                         .email("sekk" + id + "@test.com")
                         .password("password123")
                         .build())
                 .retrieve()
-                .body(String.class);
+                .body(AuthResponse.class);
+
+        assertNotNull(authResponse);
+        assertNotNull(authResponse.refreshToken());
+
+        token = authResponse.accessToken();
 
         assertNotNull(token);
 

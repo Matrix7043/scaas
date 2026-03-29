@@ -29,7 +29,7 @@ public class SecurityBeansConfig {
                         securityContext.requireExplicitSave(false)
                 )
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers("/auth/**").permitAll()
+                        auth.requestMatchers("/auth/login", "/auth/register", "/auth/refresh").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .cors(cors -> {})
