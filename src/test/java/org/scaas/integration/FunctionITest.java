@@ -7,6 +7,7 @@ import org.junit.jupiter.api.MediaType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.scaas.config.TestContainerServiceConfig;
 import org.scaas.domain.entites.Function;
 import org.scaas.domain.repositories.FunctionRepository;
 import org.scaas.protocol.responses.AuthResponse;
@@ -14,6 +15,7 @@ import org.scaas.protocol.responses.FunctionResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -33,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@Import(TestContainerServiceConfig.class)
 class FunctionITest {
 
     @Autowired
@@ -456,6 +459,6 @@ class FunctionITest {
         mockMvc.perform(post("/functions")
                         .contentType(String.valueOf(MediaType.APPLICATION_JSON))
                         .content("{}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }

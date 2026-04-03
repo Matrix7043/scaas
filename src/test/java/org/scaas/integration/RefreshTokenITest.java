@@ -82,7 +82,7 @@ public class RefreshTokenITest {
 
         mockMvc.perform(get("/functions")
                 .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         String refreshResponse = mockMvc.perform(post("/auth/refresh")
                 .contentType(String.valueOf(MediaType.APPLICATION_JSON))

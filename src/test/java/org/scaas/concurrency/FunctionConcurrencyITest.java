@@ -3,6 +3,7 @@ package org.scaas.concurrency;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.scaas.config.TestContainerServiceConfig;
 import org.scaas.domain.entites.Function;
 import org.scaas.domain.enumerations.Runtime;
 import org.scaas.domain.repositories.FunctionRepository;
@@ -16,6 +17,7 @@ import org.scaas.testdata.Action;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
@@ -39,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@Import(TestContainerServiceConfig.class)
 class FunctionConcurrencyITest {
 
     @LocalServerPort

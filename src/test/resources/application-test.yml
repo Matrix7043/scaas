@@ -27,3 +27,6 @@ jwt:
 app:
   storage:
     base-path: storage-test
+
+runner:
+  base-url: http://localhost:8080
