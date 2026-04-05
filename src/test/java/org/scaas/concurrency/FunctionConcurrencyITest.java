@@ -62,12 +62,7 @@ class FunctionConcurrencyITest {
         return restClient.post()
                 .uri("/functions/" + function.id() + "/deploy")
                 .headers(h -> h.addAll(headers))
-                .exchange((req, res) -> {
-                    String body = new String(res.getBody().readAllBytes());
-                    System.out.println("Status: " + res.getStatusCode());
-                    System.out.println("Body: " + body);
-                    return ResponseEntity.status(res.getStatusCode()).build();
-                });
+                .exchange((req, res) -> ResponseEntity.status(res.getStatusCode()).build());
     }
 
     private ResponseEntity<Void> update() {
@@ -77,12 +72,7 @@ class FunctionConcurrencyITest {
                 .body(UpdateFunctionRequest.builder()
                         .name("Updated")
                         .build())
-                .exchange((req, res) -> {
-                    String body = new String(res.getBody().readAllBytes());
-                    System.out.println("Status: " + res.getStatusCode());
-                    System.out.println("Body: " + body);
-                    return ResponseEntity.status(res.getStatusCode()).build();
-                });
+                .exchange((req, res) -> ResponseEntity.status(res.getStatusCode()).build());
     }
 
     @BeforeEach

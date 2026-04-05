@@ -6,7 +6,6 @@ services:
     restart: always
     environment:
       POSTGRES_PASSWORD: changemeinprod!
-      TZ: Asia/Kolkata
 
   adminer:
     image: adminer:latest

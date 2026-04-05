@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { uploadArtifact, deployFunction } from "../api";
-
+import { ArrowLeft, Code2, Lock, Unlock, Save, Upload, Play } from "lucide-react";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
 import { createTheme } from "@uiw/codemirror-themes";
@@ -193,8 +193,8 @@ function Editor({ fn, mode = "view", onBack, onFunctionUpdated }) {
   };
 
   // Colour of the status indicator dot
-  const dotColor = deploying ? "#e3a000" : uploading ? "#7ec8e8" : "#2ea043";
-  const dotLabel = deploying ? "● Deploying" : uploading ? "● Uploading" : "● Ready";
+  // const dotColor = deploying ? "#e3a000" : uploading ? "#7ec8e8" : "#2ea043";
+  // const dotLabel = deploying ? "● Deploying" : uploading ? "● Uploading" : "● Ready";
 
   const outputColor = {
     blank: "transparent", system: "#2a3d2a", output: "#c8c8c8",
