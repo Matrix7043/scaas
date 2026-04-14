@@ -12,10 +12,18 @@ import java.util.UUID;
 
 public interface FunctionService {
     FunctionResponse createFunction(CreateFunctionRequest request);
+
     FunctionResponse updateFunctionById(UUID id, UpdateFunctionRequest request);
+
     void deleteFunctionById(UUID id);
+
     Page<FunctionResponse> getFunctions(Pageable pageable);
+
     void replaceArtifact(UUID id, MultipartFile file);
+
+    String getArtifactContent(UUID id);
+
     FunctionResponse getFunctionById(UUID id);
+
     DeploymentResponse deployFunction(UUID id);
 }

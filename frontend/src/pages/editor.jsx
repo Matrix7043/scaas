@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   ArrowLeft, Lock, Unlock, Save, RotateCcw, Terminal, Code2, X,
-  AlertTriangle, Trash2, Upload, Rocket, CheckCircle, AlertCircle,
+  AlertTriangle, Trash2, Upload, Rocket,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { uploadArtifact, deployFunction } from "../api";
-import { ArrowLeft, Code2, Lock, Unlock, Save, Upload, Play } from "lucide-react";
+import { uploadArtifact, deployFunction, getArtifact } from "../api";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
 import { createTheme } from "@uiw/codemirror-themes";
@@ -68,16 +67,15 @@ function UnsavedDialog({ fn, onSave, onDiscard, onCancel }) {
 
 // ── Main Editor ───────────────────────────────────────────────────────────────
 function Editor({ fn, mode = "view", onBack, onFunctionUpdated }) {
-  // Default code: use whatever the backend stored, or a starter template
-  const defaultCode =
-    fn?.code ||
+  const starterTemplate =
     `def ${fn?.name || "handler"}():\n    # Write your code here\n    pass\n`;
 
-  const [code, setCode] = useState(defaultCode);
-  const [savedCode, setSavedCode] = useState(defaultCode);  // tracks last uploaded version
+  const [code, setCode] = useState(starterTemplate);
+  const [savedCode, setSavedCode] = useState(starterTemplate);  // tracks last uploaded version
+  const [artifactLoading, setArtifactLoading] = useState(true); // loading saved code
   const [output, setOutput] = useState([]);
   const [terminalOpen, setTerminalOpen] = useState(true);
-  const [lineCount, setLineCount] = useState(defaultCode.split("\n").length);
+  const [lineCount, setLineCount] = useState(starterTemplate.split("\n").length);
   const [showUnsaved, setShowUnsaved] = useState(false);
 
   // Upload (save) state
@@ -90,6 +88,24 @@ function Editor({ fn, mode = "view", onBack, onFunctionUpdated }) {
   const termBottomRef = useRef(null);
   const isEditable = mode === "edit";
   const isDirty = isEditable && code !== savedCode;
+
+  // ── Fetch saved artifact on mount ─────────────────────────────────────────
+  // FunctionResponse has no `code` field — we must call GET /functions/{id}/artifacts
+  // to load the previously uploaded Python source.
+  useEffect(() => {
+    if (!fn?.id) { setArtifactLoading(false); return; }
+    getArtifact(fn.id)
+      .then((src) => {
+        if (src) {
+          setCode(src);
+          setSavedCode(src);
+          setLineCount(src.split("\n").length);
+        }
+        // if null → no artifact yet, keep the starter template
+      })
+      .catch(() => { /* silently keep starter template on error */ })
+      .finally(() => setArtifactLoading(false));
+  }, [fn?.id]);
 
   // Auto-scroll terminal
   useEffect(() => { termBottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [output]);
@@ -191,10 +207,6 @@ function Editor({ fn, mode = "view", onBack, onFunctionUpdated }) {
       setDeploying(false);
     }
   };
-
-  // Colour of the status indicator dot
-  // const dotColor = deploying ? "#e3a000" : uploading ? "#7ec8e8" : "#2ea043";
-  // const dotLabel = deploying ? "● Deploying" : uploading ? "● Uploading" : "● Ready";
 
   const outputColor = {
     blank: "transparent", system: "#2a3d2a", output: "#c8c8c8",
@@ -304,15 +316,6 @@ function Editor({ fn, mode = "view", onBack, onFunctionUpdated }) {
               : <><Rocket size={12} /><span>Deploy</span></>
             }
           </motion.button>
-
-          <div style={S.topBarDivider} />
-
-          {/* Status dot */}
-          <motion.span style={{ ...S.status, color: dotColor }}
-            animate={{ opacity: (deploying || uploading) ? [1, 0.3, 1] : 1 }}
-            transition={{ repeat: (deploying || uploading) ? Infinity : 0, duration: 0.8 }}>
-            {dotLabel}
-          </motion.span>
         </div>
       </div>
 
@@ -350,12 +353,23 @@ function Editor({ fn, mode = "view", onBack, onFunctionUpdated }) {
             extensions={[python()]}
             theme={scaasTheme}
             onChange={handleCodeChange}
-            readOnly={!isEditable}
+            readOnly={!isEditable || artifactLoading}
             height="100%"
             width="100%"
-            style={{ height: "100%", fontSize: "13px", lineHeight: "1.7" }}
+            style={{ height: "100%", fontSize: "13px", lineHeight: "1.7", opacity: artifactLoading ? 0.35 : 1, transition: "opacity 0.2s ease" }}
           />
           {!isEditable && <div style={S.viewOverlay} />}
+          {artifactLoading && (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3, pointerEvents: "none" }}>
+              <motion.span
+                animate={{ opacity: [1, 0.3, 1] }}
+                transition={{ repeat: Infinity, duration: 1 }}
+                style={{ fontSize: "11px", color: "#2ea043", letterSpacing: "0.12em", textTransform: "uppercase" }}
+              >
+                Loading…
+              </motion.span>
+            </div>
+          )}
         </div>
       </div>
 

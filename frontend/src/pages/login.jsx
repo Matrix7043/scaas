@@ -64,7 +64,7 @@ function LoginPage({ onSuccess }) {
         setStatus("loading");
         try {
             if (mode === "login") {
-                // POST /auth/login → returns JWT string, saved to localStorage by api.js
+                // api.login() returns the raw JWT string directly
                 const token = await apiLogin({ email: form.email, password: form.password });
                 // Decode the username from the JWT payload (middle part, base64)
                 let userName = form.email;

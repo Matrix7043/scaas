@@ -36,7 +36,8 @@ public class FunctionController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<FunctionResponse> updateById(@PathVariable UUID id,@Valid @RequestBody UpdateFunctionRequest request) {
+    public ResponseEntity<FunctionResponse> updateById(@PathVariable UUID id,
+            @Valid @RequestBody UpdateFunctionRequest request) {
         FunctionResponse response = functionService.updateFunctionById(id, request);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
@@ -45,6 +46,15 @@ public class FunctionController {
     public ResponseEntity<Void> upload(@PathVariable UUID id, @RequestParam("file") MultipartFile file) {
         functionService.replaceArtifact(id, file);
         return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @GetMapping("/{id}/artifacts")
+    public ResponseEntity<String> getArtifactContent(@PathVariable UUID id) {
+        String content = functionService.getArtifactContent(id);
+        if (content == null) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(content);
     }
 
     @DeleteMapping("/{id}")

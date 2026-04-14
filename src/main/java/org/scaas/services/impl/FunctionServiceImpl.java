@@ -199,6 +199,28 @@ public class FunctionServiceImpl implements FunctionService {
     }
 
     @Override
+    public String getArtifactContent(UUID id) {
+        User owner = currentUserService.getCurrentUser();
+        Function function = functionRepository.findByIdAndOwnerAndDeletedAtIsNull(id, owner)
+                .orElseThrow(() -> new ResourceNotFoundException("Function not found"));
+
+        if (function.getStoragePath() == null) {
+            return null;
+        }
+
+        File file = storageService.getFile(function.getStoragePath());
+        if (file == null || !file.exists()) {
+            return null;
+        }
+
+        try {
+            return java.nio.file.Files.readString(file.toPath());
+        } catch (IOException e) {
+            throw new StorageException("Failed to read artifact", e);
+        }
+    }
+
+    @Override
     public FunctionResponse getFunctionById(UUID id) {
         
         User owner = currentUserService.getCurrentUser();
